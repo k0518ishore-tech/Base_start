@@ -58,12 +58,6 @@ const ADMIN_MODULES = [
     icon: ShieldCheck,
   },
   {
-    title: 'Audit Logs & System Events',
-    desc: 'Inspect immutable records of administrative actions, system events, and registration alerts.',
-    path: '/admin/audit-logs',
-    icon: Activity,
-  },
-  {
     title: 'Citizen Portal Hub',
     desc: 'Switch to citizen view to test automated eligibility assessments and catalog features.',
     path: '/dashboard',
@@ -253,9 +247,9 @@ const AdminDashboard = () => {
               <Activity className="w-4 h-4 text-emerald-600" />
               <span>System Notifications & Events</span>
             </h3>
-            <Link to="/admin/audit-logs" className="text-xs font-semibold text-gov-secondary hover:underline">
-              All Logs
-            </Link>
+            <span className="text-[11px] font-semibold text-gov-muted uppercase tracking-wider">
+              Live Feed
+            </span>
           </div>
 
           <div className="space-y-3 max-h-[320px] overflow-y-auto">

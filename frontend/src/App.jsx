@@ -38,7 +38,6 @@ import AdminRulesPage from './pages/admin/AdminRulesPage';
 import AdminUsersPage from './pages/admin/AdminUsersPage';
 import AdminFeedbackPage from './pages/admin/AdminFeedbackPage';
 import AdminVerificationPage from './pages/admin/AdminVerificationPage';
-import AdminAuditLogsPage from './pages/admin/AdminAuditLogsPage';
 
 // Root Entry Component: requires login first, then redirects to appropriate portal
 const RootRedirect = () => {
@@ -152,7 +151,6 @@ function App() {
         <Route path="users" element={<AdminUsersPage />} />
         <Route path="feedback" element={<AdminFeedbackPage />} />
         <Route path="verification" element={<AdminVerificationPage />} />
-        <Route path="audit-logs" element={<AdminAuditLogsPage />} />
       </Route>
 
       {/* Fallback */}

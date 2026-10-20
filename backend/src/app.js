@@ -21,6 +21,7 @@ import assistantRoutes from './routes/assistantRoutes.js';
 import { errorHandler } from './middleware/errorHandler.js';
 
 dotenv.config();
+dotenv.config({ path: './backend/.env' });
 
 const app = express();
 

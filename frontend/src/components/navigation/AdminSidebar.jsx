@@ -20,7 +20,6 @@ const AdminSidebar = () => {
     { label: 'Citizen Accounts', path: '/admin/users', icon: Users },
     { label: 'Feedback Desk', path: '/admin/feedback', icon: MessageSquare },
     { label: 'Quality Verification', path: '/admin/verification', icon: ShieldCheck },
-    { label: 'Audit & System Logs', path: '/admin/audit-logs', icon: Activity },
   ];
 
   return (

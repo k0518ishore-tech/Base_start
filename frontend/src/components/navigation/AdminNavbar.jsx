@@ -41,7 +41,6 @@ const AdminNavbar = () => {
     { label: 'Users', path: '/admin/users' },
     { label: 'Feedback', path: '/admin/feedback' },
     { label: 'Verification', path: '/admin/verification' },
-    { label: 'Audit Logs', path: '/admin/audit-logs' },
   ];
 
   const isActive = (path, end) => {

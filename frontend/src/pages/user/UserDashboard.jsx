@@ -311,7 +311,7 @@ const UserDashboard = () => {
                       Administrator Console
                     </h3>
                     <p className="text-xs text-slate-700 mt-1 leading-relaxed">
-                      Manage schemes CRUD, departments, rule builder, user directories, feedback desk, and audit logs.
+                      Manage schemes CRUD, departments, rule builder, user directories, and feedback desk.
                     </p>
                   </div>
                 </div>

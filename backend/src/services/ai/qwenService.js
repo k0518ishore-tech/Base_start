@@ -97,7 +97,7 @@ const callOpenRouter = async (systemPrompt, messages) => {
   const apiKey = process.env.OPENROUTER_API_KEY;
   if (!apiKey) return null;
 
-  const model = process.env.QWEN_MODEL || 'qwen/qwen-2.5-7b-instruct:free';
+  const model = process.env.QWEN_MODEL || 'qwen/qwen-2.5-7b-instruct';
 
   const payload = {
     model,
