@@ -17,6 +17,7 @@ import notificationRoutes from './routes/notificationRoutes.js';
 import feedbackRoutes from './routes/feedbackRoutes.js';
 import searchHistoryRoutes from './routes/searchHistoryRoutes.js';
 import adminRoutes from './routes/adminRoutes.js';
+import assistantRoutes from './routes/assistantRoutes.js';
 import { errorHandler } from './middleware/errorHandler.js';
 
 dotenv.config();
@@ -63,6 +64,7 @@ app.use('/api/notifications', notificationRoutes);
 app.use('/api/feedback', feedbackRoutes);
 app.use('/api/search-history', searchHistoryRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/assistant', assistantRoutes);
 
 // 404 Route Handler
 app.use('*', (req, res) => {

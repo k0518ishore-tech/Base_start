@@ -59,12 +59,12 @@ const ALL_PORTAL_MODULES = [
     badgeVariant: 'warning',
   },
   {
-    title: 'Scheme Assistant (Preview)',
-    desc: 'Preview of upcoming conversational public assistance interface.',
+    title: 'AI Scheme Assistant',
+    desc: 'Chat with the National Scheme Assistant powered by Qwen AI to verify eligibility rules and required documents.',
     path: '/assistant',
     icon: Bot,
-    badge: 'Preview Mode',
-    badgeVariant: 'neutral',
+    badge: 'Qwen AI',
+    badgeVariant: 'primary',
   },
   {
     title: 'Citizen Profile Management',
