@@ -9,6 +9,7 @@ import {
   AlertCircle,
   FileText,
   Eye,
+  EyeOff,
   Save,
   RotateCcw,
   Sparkles,
@@ -468,6 +469,7 @@ const AdminRulesPage = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [showConditionsGuide, setShowConditionsGuide] = useState(false);
+  const [isPublishingScheme, setIsPublishingScheme] = useState(false);
 
   // Form State
   const [formData, setFormData] = useState({
@@ -480,11 +482,11 @@ const AdminRulesPage = () => {
     isActive: true,
   });
 
-  // 1. Load All Schemes
+  // 1. Load All Schemes (including draft/inactive schemes so admin can configure their rules)
   useEffect(() => {
     setIsLoadingSchemes(true);
     api
-      .get('/schemes?limit=2500')
+      .get('/schemes', { params: { includeInactive: 'true', limit: 2500 } })
       .then((res) => {
         if (res.data.success && res.data.data.length > 0) {
           setSchemes(res.data.data);
@@ -635,8 +637,44 @@ const AdminRulesPage = () => {
     });
   };
 
+  // Publish Scheme to make it visible to all users and send targeted alerts
+  const handlePublishScheme = async () => {
+    if (!selectedSchemeId) return;
+    setIsPublishingScheme(true);
+    try {
+      const res = await api.put(`/schemes/${selectedSchemeId}`, { isActive: true });
+      if (res.data.success) {
+        setSchemes((prev) =>
+          prev.map((s) => (s._id === selectedSchemeId ? { ...s, isActive: true } : s))
+        );
+        showToast(
+          '🎉 Scheme published successfully! It is now visible to all users and targeted alerts were sent to eligible citizens.',
+          'success'
+        );
+      }
+    } catch (err) {
+      showToast(err.response?.data?.message || 'Failed to publish scheme', 'error');
+    } finally {
+      setIsPublishingScheme(false);
+    }
+  };
+
+  // Revert Scheme to draft mode (hidden from public users)
+  const handleUnpublishScheme = async () => {
+    if (!selectedSchemeId) return;
+    try {
+      await api.put(`/schemes/${selectedSchemeId}`, { isActive: false });
+      setSchemes((prev) =>
+        prev.map((s) => (s._id === selectedSchemeId ? { ...s, isActive: false } : s))
+      );
+      showToast('Scheme reverted to draft. It is now hidden from public users.', 'info');
+    } catch (err) {
+      showToast('Failed to unpublish scheme', 'error');
+    }
+  };
+
   // Save Rule
-  const handleSaveRule = async (e) => {
+  const handleSaveRule = async (e, alsoPublish = false) => {
     e.preventDefault();
     if (!formData.ruleName || !formData.field || !formData.operator || formData.expectedValue === '') {
       showToast('Please fill all mandatory rule details', 'warning');
@@ -677,6 +715,10 @@ const AdminRulesPage = () => {
         const res = await api.post('/eligibility-rules', payload);
         showToast('Rule saved and applied to scheme!', 'success');
         fetchRulesForScheme(selectedSchemeId, res.data.data?._id);
+      }
+
+      if (alsoPublish) {
+        await handlePublishScheme();
       }
     } catch (err) {
       showToast(err.response?.data?.message || 'Failed to save eligibility rule', 'error');
@@ -801,6 +843,59 @@ const AdminRulesPage = () => {
         </div>
       )}
 
+      {/* Scheme Visibility & Publication Status Workflow Banner */}
+      {selectedScheme && !selectedScheme.isActive && (
+        <div className="p-4 rounded-2xl border-2 border-amber-300 bg-amber-50 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="flex items-start gap-3">
+            <span className="p-2 rounded-xl bg-amber-200/80 text-amber-900 mt-0.5">
+              <EyeOff className="w-5 h-5 text-amber-800" />
+            </span>
+            <div>
+              <div className="flex items-center gap-2">
+                <h3 className="text-sm font-extrabold text-amber-950">
+                  Draft Scheme — Hidden from Public Users
+                </h3>
+                <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-amber-200 text-amber-900 uppercase">
+                  Pending Rules
+                </span>
+              </div>
+              <p className="text-xs text-amber-800 mt-1 max-w-2xl leading-relaxed">
+                Essential details for <strong>"{selectedScheme.schemeName}"</strong> are saved. Configure the required eligibility conditions below using the 15 Common Eligibility Conditions. When ready, click <strong>Publish Scheme to Users</strong> to make it live and automatically notify eligible citizens.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 self-start md:self-center shrink-0">
+            <Button
+              variant="primary"
+              size="md"
+              onClick={handlePublishScheme}
+              isLoading={isPublishingScheme}
+              className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold gap-1.5 shadow-sm cursor-pointer text-xs"
+            >
+              <CheckCircle2 className="w-4 h-4" />
+              <span>Publish Scheme to Users</span>
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {selectedScheme && selectedScheme.isActive && (
+        <div className="p-3 rounded-xl border border-emerald-200 bg-emerald-50/60 flex items-center justify-between text-xs text-emerald-900">
+          <div className="flex items-center gap-2 font-bold">
+            <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+            <span>Scheme is Published & Live: Visible to all public users on portal.</span>
+          </div>
+          <button
+            type="button"
+            onClick={handleUnpublishScheme}
+            className="text-xs text-amber-800 font-bold hover:underline cursor-pointer"
+          >
+            Unpublish / Revert to Draft
+          </button>
+        </div>
+      )}
+
       {/* TOP SELECTION CONTROL DESK (Dual-Dropdown Architecture) */}
       <div className="bg-white rounded-2xl border border-gov-border shadow-subtle p-5 space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -829,7 +924,7 @@ const AdminRulesPage = () => {
               >
                 {schemes.map((s) => (
                   <option key={s._id} value={s._id}>
-                    {s.schemeName} ({s.department?.departmentName || 'General Dept'})
+                    {s.schemeName} ({s.departmentId?.departmentName || s.ministry || 'Dept'}) {!s.isActive ? '⚠️ [Draft - Hidden from Users]' : '✓ [Published]'}
                   </option>
                 ))}
               </select>
@@ -1663,17 +1758,31 @@ const AdminRulesPage = () => {
               </label>
             </div>
 
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
               <Button
                 type="submit"
-                variant="primary"
+                variant={selectedScheme && !selectedScheme.isActive ? 'outline' : 'primary'}
                 size="md"
                 isLoading={isSaving}
-                className="gap-2 shadow-sm font-bold text-sm px-6 cursor-pointer"
+                className="gap-2 shadow-sm font-bold text-xs px-5 cursor-pointer"
               >
                 <Save className="w-4 h-4" />
                 <span>{isExistingDbRule ? 'Save & Apply Rule' : 'Save Rule to Scheme'}</span>
               </Button>
+
+              {selectedScheme && !selectedScheme.isActive && (
+                <Button
+                  type="button"
+                  variant="primary"
+                  size="md"
+                  onClick={(e) => handleSaveRule(e, true)}
+                  isLoading={isSaving || isPublishingScheme}
+                  className="gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-5 shadow-sm cursor-pointer"
+                >
+                  <CheckCircle2 className="w-4 h-4" />
+                  <span>Save Rule & Publish Scheme</span>
+                </Button>
+              )}
             </div>
           </div>
         </form>

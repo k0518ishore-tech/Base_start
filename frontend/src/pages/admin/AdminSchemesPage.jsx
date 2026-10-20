@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   FileText,
   Plus,
@@ -11,6 +12,11 @@ import {
   ExternalLink,
   ShieldCheck,
   AlertTriangle,
+  Sliders,
+  ArrowRight,
+  Eye,
+  EyeOff,
+  Sparkles,
 } from 'lucide-react';
 import Button from '../../components/common/Button';
 import Input from '../../components/common/Input';
@@ -33,6 +39,7 @@ const CATEGORIES = [
 ];
 
 const AdminSchemesPage = () => {
+  const navigate = useNavigate();
   const [schemes, setSchemes] = useState([]);
   const [departments, setDepartments] = useState([]);
   const [search, setSearch] = useState('');
@@ -60,7 +67,7 @@ const AdminSchemesPage = () => {
     officialWebsite: '',
     officialApplicationUrl: '',
     verificationStatus: 'VERIFIED',
-    isActive: true,
+    isActive: false,
   });
 
   // Delete Confirmation State
@@ -114,7 +121,7 @@ const AdminSchemesPage = () => {
       officialWebsite: '',
       officialApplicationUrl: '',
       verificationStatus: 'VERIFIED',
-      isActive: true,
+      isActive: false, // Default to draft mode: only visible after rules are defined
     });
     setIsModalOpen(true);
   };
@@ -176,14 +183,23 @@ const AdminSchemesPage = () => {
 
       if (editingSchemeId) {
         await api.put(`/schemes/${editingSchemeId}`, payload);
-        showToast('Scheme updated successfully', 'success');
+        showToast('Scheme details updated successfully', 'success');
+        setIsModalOpen(false);
+        fetchSchemes();
       } else {
-        await api.post('/schemes', payload);
-        showToast('New scheme published successfully', 'success');
+        // Create new scheme in draft mode (hidden from users until rules are configured)
+        payload.isActive = false;
+        const res = await api.post('/schemes', payload);
+        const newScheme = res.data?.data;
+        showToast('Scheme essential details saved! Redirecting to Rule Editor to set eligibility conditions...', 'success');
+        setIsModalOpen(false);
+        // Seamlessly open Rule Editor with this new scheme pre-selected
+        if (newScheme?._id) {
+          navigate(`/admin/rules?schemeId=${newScheme._id}&fromCreate=true`);
+        } else {
+          fetchSchemes();
+        }
       }
-
-      setIsModalOpen(false);
-      fetchSchemes();
     } catch (err) {
       showToast(err.response?.data?.message || 'Failed to save scheme', 'error');
     } finally {
@@ -200,10 +216,15 @@ const AdminSchemesPage = () => {
         setSchemes((prev) =>
           prev.map((s) => (s._id === scheme._id ? { ...s, isActive: !scheme.isActive } : s))
         );
-        showToast(`Scheme ${!scheme.isActive ? 'activated' : 'deactivated'}`, 'success');
+        showToast(
+          !scheme.isActive
+            ? 'Scheme published! It is now visible to all users and eligible citizens were notified.'
+            : 'Scheme deactivated. It is now hidden from public users.',
+          'success'
+        );
       }
     } catch (err) {
-      showToast('Failed to update status', 'error');
+      showToast(err.response?.data?.message || 'Failed to update status', 'error');
     }
   };
 
@@ -231,7 +252,7 @@ const AdminSchemesPage = () => {
         <div>
           <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Scheme Management</h1>
           <p className="text-xs text-slate-600 mt-0.5">
-            Create, update, verify, and activate government schemes across ministries.
+            Create, update, verify, and publish government schemes across ministries.
           </p>
         </div>
 
@@ -260,7 +281,7 @@ const AdminSchemesPage = () => {
       ) : schemes.length === 0 ? (
         <EmptyState
           title="No schemes found"
-          description="Click Add Scheme above to publish your first government welfare program."
+          description="Click Add Scheme above to create your first government welfare program."
           actionLabel="Add Scheme"
           onAction={handleOpenCreateModal}
         />
@@ -274,7 +295,7 @@ const AdminSchemesPage = () => {
                   <th className="px-4 py-3.5">Department</th>
                   <th className="px-4 py-3.5">Category</th>
                   <th className="px-4 py-3.5">Verification</th>
-                  <th className="px-4 py-3.5">Status</th>
+                  <th className="px-4 py-3.5">Visibility Status</th>
                   <th className="px-5 py-3.5 text-right">Actions</th>
                 </tr>
               </thead>
@@ -306,27 +327,49 @@ const AdminSchemesPage = () => {
                     <td className="px-4 py-3.5">
                       <button
                         onClick={() => handleToggleActive(s)}
-                        className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                        className={`text-[10px] font-bold px-2.5 py-1 rounded-full flex items-center gap-1 cursor-pointer transition-all ${
                           s.isActive
-                            ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
-                            : 'bg-rose-50 text-rose-800 border border-rose-200'
+                            ? 'bg-emerald-50 text-emerald-800 border border-emerald-200 hover:bg-emerald-100'
+                            : 'bg-amber-50 text-amber-900 border border-amber-300 hover:bg-amber-100'
                         }`}
+                        title={
+                          s.isActive
+                            ? 'Scheme is published & visible to all users (click to unpublish)'
+                            : 'Scheme is hidden in draft mode pending rules (click to publish)'
+                        }
                       >
-                        {s.isActive ? 'Active' : 'Inactive'}
+                        {s.isActive ? (
+                          <>
+                            <Eye className="w-3 h-3 text-emerald-600" />
+                            <span>Published (Live)</span>
+                          </>
+                        ) : (
+                          <>
+                            <EyeOff className="w-3 h-3 text-amber-600" />
+                            <span>Draft (Hidden)</span>
+                          </>
+                        )}
                       </button>
                     </td>
                     <td className="px-5 py-3.5 text-right">
-                      <div className="flex items-center justify-end gap-1">
+                      <div className="flex items-center justify-end gap-1.5">
                         <button
                           onClick={() => handleOpenEditModal(s)}
-                          className="p-1.5 text-slate-400 hover:text-gov-secondary rounded-lg hover:bg-slate-100"
-                          title="Edit Scheme"
+                          className="p-1.5 text-slate-400 hover:text-gov-secondary rounded-lg hover:bg-slate-100 cursor-pointer"
+                          title="Edit Scheme Details"
                         >
                           <Edit2 className="w-4 h-4" />
                         </button>
                         <button
+                          onClick={() => navigate(`/admin/rules?schemeId=${s._id}`)}
+                          className="p-1.5 text-gov-secondary hover:text-gov-primary rounded-lg hover:bg-blue-50 cursor-pointer"
+                          title="Configure Eligibility Rules in Rule Builder"
+                        >
+                          <Sliders className="w-4 h-4" />
+                        </button>
+                        <button
                           onClick={() => setSchemeToDelete(s)}
-                          className="p-1.5 text-slate-400 hover:text-rose-600 rounded-lg hover:bg-rose-50"
+                          className="p-1.5 text-slate-400 hover:text-rose-600 rounded-lg hover:bg-rose-50 cursor-pointer"
                           title="Delete Scheme"
                         >
                           <Trash2 className="w-4 h-4" />
@@ -352,12 +395,42 @@ const AdminSchemesPage = () => {
             <Button variant="outline" size="sm" onClick={() => setIsModalOpen(false)}>
               Cancel
             </Button>
-            <Button variant="primary" size="sm" onClick={handleSaveScheme} isLoading={isSaving}>
-              {editingSchemeId ? 'Update Scheme' : 'Publish Scheme'}
+            <Button
+              variant="primary"
+              size="sm"
+              onClick={handleSaveScheme}
+              isLoading={isSaving}
+              className="gap-1.5"
+            >
+              {editingSchemeId ? (
+                <>
+                  <CheckCircle2 className="w-4 h-4" />
+                  <span>Update Scheme</span>
+                </>
+              ) : (
+                <>
+                  <span>Save & Open Rule Editor</span>
+                  <ArrowRight className="w-4 h-4" />
+                </>
+              )}
             </Button>
           </>
         }
       >
+        {!editingSchemeId && (
+          <div className="mb-4 p-3.5 rounded-xl border border-blue-200 bg-blue-50/70 text-slate-700 text-xs flex items-start gap-2.5">
+            <span className="p-1 rounded-md bg-blue-100 text-gov-secondary mt-0.5">
+              <Sliders className="w-4 h-4" />
+            </span>
+            <div>
+              <div className="font-extrabold text-gov-secondary">Step 1 of 2: Essential Scheme Details</div>
+              <p className="mt-0.5 text-slate-600 leading-relaxed">
+                Fill in the basic program information below. When you click <strong>Save & Open Rule Editor</strong>, the scheme will be saved in <em>draft mode (hidden from users)</em> and will immediately open in the <strong>Rule Editor</strong> where you can define eligibility conditions. Only after rules are configured and published will the scheme become visible to public users.
+              </p>
+            </div>
+          </div>
+        )}
+
         <form onSubmit={handleSaveScheme} className="space-y-4 text-xs">
           <div>
             <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
@@ -516,10 +589,10 @@ const AdminSchemesPage = () => {
                 id="activeSchemeCheck"
                 checked={formData.isActive}
                 onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
-                className="rounded text-gov-secondary"
+                className="rounded text-gov-secondary cursor-pointer"
               />
-              <label htmlFor="activeSchemeCheck" className="text-xs font-bold text-slate-700">
-                Scheme Active & Discoverable
+              <label htmlFor="activeSchemeCheck" className="text-xs font-bold text-slate-700 cursor-pointer">
+                Publish Immediately (Make Visible to Users)
               </label>
             </div>
           </div>

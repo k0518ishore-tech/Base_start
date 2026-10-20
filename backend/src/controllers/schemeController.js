@@ -157,6 +157,14 @@ export const getSchemeById = async (req, res, next) => {
       return res.status(404).json({ success: false, message: 'Scheme not found' });
     }
 
+    // Inactive schemes are restricted to administrators until published
+    if (!scheme.isActive && req.user?.role !== 'ADMIN') {
+      return res.status(404).json({
+        success: false,
+        message: 'This scheme is currently in draft mode and pending eligibility rule configuration.',
+      });
+    }
+
     // Retrieve active eligibility rules for this scheme
     const rules = await EligibilityRule.find({ schemeId: scheme._id, isActive: true });
 
@@ -462,7 +470,7 @@ export const createScheme = async (req, res, next) => {
       sourceUrls: Array.isArray(sourceUrls) ? sourceUrls : [],
       verificationStatus: verificationStatus || 'NEEDS_VERIFICATION',
       lastVerifiedAt: verificationStatus === 'VERIFIED' ? new Date() : null,
-      isActive: isActive !== undefined ? Boolean(isActive) : true,
+      isActive: isActive !== undefined ? Boolean(isActive) : false,
     });
 
     await recordAuditLog({
@@ -470,29 +478,35 @@ export const createScheme = async (req, res, next) => {
       action: 'CREATE_SCHEME',
       entityType: 'Scheme',
       entityId: newScheme._id,
-      details: { name: newScheme.schemeName },
+      details: { name: newScheme.schemeName, isActive: newScheme.isActive },
     });
 
-    // Dispatch targeted notifications strictly to ELIGIBLE citizens
+    // Dispatch targeted notifications strictly to ELIGIBLE citizens IF scheme is active
     let notifiedCount = 0;
-    try {
-      const dispatchResult = await notifyEligibleCitizensForScheme(newScheme._id);
-      notifiedCount = dispatchResult.notifiedCount || 0;
-    } catch (e) {
-      console.error('[createScheme] Targeted notification dispatch error:', e);
+    if (newScheme.isActive) {
+      try {
+        const dispatchResult = await notifyEligibleCitizensForScheme(newScheme._id);
+        notifiedCount = dispatchResult.notifiedCount || 0;
+      } catch (e) {
+        console.error('[createScheme] Targeted notification dispatch error:', e);
+      }
     }
 
     await createSystemNotification({
       eventType: 'SCHEME_CREATED',
-      title: 'New Scheme Published',
-      description: `Scheme "${newScheme.schemeName}" was added under ${dept.departmentName}. Targeted alerts delivered to ${notifiedCount} eligible citizen(s).`,
+      title: newScheme.isActive ? 'New Scheme Published' : 'New Scheme Created (Draft)',
+      description: newScheme.isActive
+        ? `Scheme "${newScheme.schemeName}" was added under ${dept.departmentName}. Targeted alerts delivered to ${notifiedCount} eligible citizen(s).`
+        : `Scheme "${newScheme.schemeName}" was saved in draft mode under ${dept.departmentName}. Ready for eligibility rule definition.`,
       relatedEntityType: 'Scheme',
       relatedEntityId: newScheme._id,
     });
 
     return res.status(201).json({
       success: true,
-      message: `Scheme created successfully. ${notifiedCount} eligible citizen(s) were notified.`,
+      message: newScheme.isActive
+        ? `Scheme created successfully. ${notifiedCount} eligible citizen(s) were notified.`
+        : 'Scheme essential details saved. Please configure eligibility rules before publishing to users.',
       data: newScheme,
       notifiedCitizensCount: notifiedCount,
     });
