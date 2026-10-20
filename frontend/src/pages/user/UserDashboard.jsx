@@ -173,24 +173,10 @@ const UserDashboard = () => {
     <div className="space-y-8">
       {/* Welcome Banner */}
       <div className="bg-gradient-to-r from-gov-primary via-[#163863] to-[#1d4d87] rounded-2xl p-6 sm:p-8 text-white shadow-card flex flex-col md:flex-row md:items-center justify-between gap-6">
-        <div className="space-y-2">
-          <div className="flex items-center gap-2">
-            <span className="text-xs bg-white/20 px-2.5 py-0.5 rounded-full font-semibold">
-              Authenticated Citizen Session
-            </span>
-            <span className="text-xs text-blue-200">ID: {user?.id?.slice(-8)}</span>
-            {isAdmin && (
-              <span className="text-xs bg-amber-400 text-slate-900 px-2 py-0.5 rounded-full font-bold">
-                ADMIN ACCESS
-              </span>
-            )}
-          </div>
+        <div>
           <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">
-            Welcome, {user?.fullName}!
+            Welcome, {user?.fullName || 'Citizen'}
           </h1>
-          <p className="text-xs sm:text-sm text-blue-100 max-w-xl leading-relaxed">
-            Your account is authenticated. All Government Scheme Eligibility Engine modules are listed below.
-          </p>
         </div>
 
         <div className="flex flex-wrap gap-3 shrink-0">
