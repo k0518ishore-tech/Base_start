@@ -16,6 +16,10 @@ import {
   Check,
   Layers,
   ArrowRight,
+  BookOpen,
+  Info,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react';
 import Button from '../../components/common/Button';
 import Input from '../../components/common/Input';
@@ -26,16 +30,23 @@ import EmptyState from '../../components/common/EmptyState';
 import { useToast } from '../../context/ToastContext';
 import api from '../../services/api';
 
+// 15 Citizen Profile & Criteria Fields
 const RULE_FIELDS = [
-  { value: 'annualFamilyIncome', label: 'Annual Family Income (₹ Number)' },
-  { value: 'age', label: 'Age (Years computed from DOB)' },
-  { value: 'occupation', label: 'Occupation (e.g. Farmer, Student, Artisan)' },
-  { value: 'employmentStatus', label: 'Employment Status (Employed, Self-Employed, Unemployed)' },
-  { value: 'community', label: 'Social Category / Community (General, OBC, SC, ST, EWS)' },
-  { value: 'gender', label: 'Gender (Male, Female, Other)' },
-  { value: 'state', label: 'Applicable State' },
-  { value: 'disabilityStatus', label: 'Disability Status (Boolean)' },
-  { value: 'education', label: 'Highest Education Level' },
+  { value: 'age', label: '1. Age (Years computed from DOB)' },
+  { value: 'annualFamilyIncome', label: '2. Annual Family Income (₹ Number)' },
+  { value: 'state', label: '3. Residence / State (Resident of state or India)' },
+  { value: 'gender', label: '4. Gender (Female, Male, Other)' },
+  { value: 'education', label: '5. Education Level (Class 10, Class 12, Graduate)' },
+  { value: 'occupation', label: '6. Occupation (Farmer, Registered Worker, Artisan)' },
+  { value: 'community', label: '7. Social Category (SC, ST, OBC, EWS, General)' },
+  { value: 'employmentStatus', label: '8. Employment Status (Unemployed, Self-Employed)' },
+  { value: 'disabilityStatus', label: '9. Disability Status (Boolean / Benchmark %)' },
+  { value: 'landOwnership', label: '10. Land Ownership (Cultivable landholder status)' },
+  { value: 'familyStatus', label: '11. Family Status (BPL / Antyodaya / Ration Card)' },
+  { value: 'existingBenefits', label: '12. Existing Benefits (Non-receipt of overlap DBT)' },
+  { value: 'bankAccount', label: '13. Bank Account (Aadhaar-seeded DBT active)' },
+  { value: 'documents', label: '14. Documents (Identity, income & caste certificates)' },
+  { value: 'district', label: '15. Location / District (Regional block or district)' },
 ];
 
 const OPERATORS = [
@@ -45,47 +56,178 @@ const OPERATORS = [
   { value: '!=', label: '!= (Not equal to - Exclude value)' },
   { value: '<', label: '< (Strictly less than)' },
   { value: '>', label: '> (Strictly greater than)' },
-  { value: 'IN', label: 'IN (Must be in allowed list e.g. SC, ST)' },
+  { value: 'IN', label: 'IN (Must be in allowed list e.g. SC, ST, OBC)' },
   { value: 'NOT_IN', label: 'NOT_IN (Must not be in list)' },
   { value: 'BETWEEN', label: 'BETWEEN (Range [min, max] e.g. 18, 60)' },
-  { value: 'EXISTS', label: 'EXISTS (Attribute must be present)' },
+  { value: 'EXISTS', label: 'EXISTS (Attribute / certificate must be provided)' },
 ];
 
-const RULE_PRESETS = [
+// The 15 Standard Common Eligibility Conditions requested by the user
+export const COMMON_ELIGIBILITY_CONDITIONS = [
   {
-    name: 'Income Ceiling Under ₹3 Lakh',
+    id: 'TEMPLATE_AGE',
+    number: 1,
+    name: 'Age',
+    example: 'Applicant must be 18–60 years old',
+    field: 'age',
+    operator: 'BETWEEN',
+    expectedValue: '18, 60',
+    description: 'Applicant must be between 18 and 60 years of age.',
+    isMandatory: true,
+  },
+  {
+    id: 'TEMPLATE_INCOME',
+    number: 2,
+    name: 'Annual Income',
+    example: 'Family income below ₹2.5 lakh',
     field: 'annualFamilyIncome',
     operator: '<=',
-    value: '300000',
-    desc: 'Annual family income must not exceed ₹3,00,000.',
+    expectedValue: '250000',
+    description: 'Annual family income must be below ₹2,50,000.',
+    isMandatory: true,
   },
   {
-    name: 'Minimum Age 18 Years',
-    field: 'age',
-    operator: '>=',
-    value: '18',
-    desc: 'Applicant must be at least 18 years of age.',
-  },
-  {
-    name: 'Farmer / Cultivator Occupation',
-    field: 'occupation',
-    operator: '==',
-    value: 'Farmer',
-    desc: 'Primary occupation must be agricultural cultivator / farmer.',
-  },
-  {
-    name: 'Reserved Social Categories (SC, ST, OBC)',
-    field: 'community',
+    id: 'TEMPLATE_RESIDENCE',
+    number: 3,
+    name: 'Residence',
+    example: 'Must be an Indian citizen or resident of a particular state',
+    field: 'state',
     operator: 'IN',
-    value: 'SC, ST, OBC',
-    desc: 'Applicant must belong to eligible affirmative communities.',
+    expectedValue: 'All India',
+    description: 'Applicant must be an Indian citizen and resident of the specified State / Territory.',
+    isMandatory: true,
   },
   {
-    name: 'Female Citizen Beneficiary',
+    id: 'TEMPLATE_GENDER',
+    number: 4,
+    name: 'Gender',
+    example: 'Only women are eligible',
     field: 'gender',
     operator: '==',
-    value: 'Female',
-    desc: 'Welfare initiative designated specifically for women beneficiaries.',
+    expectedValue: 'Female',
+    description: 'Welfare initiative designated specifically for women beneficiaries.',
+    isMandatory: true,
+  },
+  {
+    id: 'TEMPLATE_EDUCATION',
+    number: 5,
+    name: 'Education',
+    example: 'Must have completed Class 10',
+    field: 'education',
+    operator: 'IN',
+    expectedValue: 'Class 10, Class 12, Graduate, Post Graduate',
+    description: 'Applicant must have completed at least Class 10 secondary qualification.',
+    isMandatory: true,
+  },
+  {
+    id: 'TEMPLATE_OCCUPATION',
+    number: 6,
+    name: 'Occupation',
+    example: 'Must be a farmer or registered worker',
+    field: 'occupation',
+    operator: 'IN',
+    expectedValue: 'Farmer, Agricultural Worker, Artisan',
+    description: 'Applicant primary occupation must be a farmer or registered wage worker.',
+    isMandatory: true,
+  },
+  {
+    id: 'TEMPLATE_COMMUNITY',
+    number: 7,
+    name: 'Social Category',
+    example: 'SC/ST/OBC or other specified categories',
+    field: 'community',
+    operator: 'IN',
+    expectedValue: 'SC, ST, OBC, EWS',
+    description: 'Applicant must belong to an eligible affirmative category (SC/ST/OBC/EWS).',
+    isMandatory: true,
+  },
+  {
+    id: 'TEMPLATE_EMPLOYMENT',
+    number: 8,
+    name: 'Employment Status',
+    example: 'Must be unemployed',
+    field: 'employmentStatus',
+    operator: '==',
+    expectedValue: 'Unemployed',
+    description: 'Applicant must be currently unemployed or an active jobseeker.',
+    isMandatory: true,
+  },
+  {
+    id: 'TEMPLATE_DISABILITY',
+    number: 9,
+    name: 'Disability Status',
+    example: 'Must have a specified disability percentage',
+    field: 'disabilityStatus',
+    operator: '==',
+    expectedValue: 'true',
+    description: 'Applicant must possess a certified benchmark disability percentage (>= 40%).',
+    isMandatory: false,
+  },
+  {
+    id: 'TEMPLATE_LAND',
+    number: 10,
+    name: 'Land Ownership',
+    example: 'Must own or cultivate agricultural land',
+    field: 'landOwnership',
+    operator: '==',
+    expectedValue: 'Cultivable Landholder',
+    description: 'Beneficiary must hold cultivable land ownership records or cultivate farm holdings.',
+    isMandatory: true,
+  },
+  {
+    id: 'TEMPLATE_FAMILY',
+    number: 11,
+    name: 'Family Status',
+    example: 'Must belong to a specified household category',
+    field: 'familyStatus',
+    operator: 'IN',
+    expectedValue: 'BPL, Antyodaya Anna Yojana (AAY), Priority Household (PHH)',
+    description: 'Household must belong to a recognized BPL or Antyodaya ration card category.',
+    isMandatory: true,
+  },
+  {
+    id: 'TEMPLATE_EXISTING_BENEFITS',
+    number: 12,
+    name: 'Existing Benefits',
+    example: 'Must not already receive certain overlapping benefits',
+    field: 'existingBenefits',
+    operator: '!=',
+    expectedValue: 'Overlapping Pension / DBT Subsidy',
+    description: 'Applicant must not already receive overlapping welfare pension or identical subsidy.',
+    isMandatory: true,
+  },
+  {
+    id: 'TEMPLATE_BANK',
+    number: 13,
+    name: 'Bank Account',
+    example: 'Must have an eligible bank account',
+    field: 'bankAccount',
+    operator: '==',
+    expectedValue: 'Aadhaar-Seeded DBT Account',
+    description: 'Applicant must have an active savings bank account linked to Aadhaar for DBT transfer.',
+    isMandatory: true,
+  },
+  {
+    id: 'TEMPLATE_DOCUMENTS',
+    number: 14,
+    name: 'Documents',
+    example: 'Must provide required certificates and identity proof',
+    field: 'documents',
+    operator: 'EXISTS',
+    expectedValue: 'Aadhaar Card, Income Certificate, Caste Certificate',
+    description: 'Applicant must submit required identity, income, and category certificates.',
+    isMandatory: true,
+  },
+  {
+    id: 'TEMPLATE_LOCATION',
+    number: 15,
+    name: 'Location',
+    example: 'Must reside in a specified district or region',
+    field: 'district',
+    operator: 'EXISTS',
+    expectedValue: 'Designated Aspirational District',
+    description: 'Applicant must reside in a notified district or designated regional block.',
+    isMandatory: true,
   },
 ];
 
@@ -97,19 +239,22 @@ const AdminRulesPage = () => {
   const [schemes, setSchemes] = useState([]);
   const [selectedSchemeId, setSelectedSchemeId] = useState('');
   const [rules, setRules] = useState([]);
-  const [selectedRuleId, setSelectedRuleId] = useState('NEW_RULE');
+  const [selectedRuleId, setSelectedRuleId] = useState('TEMPLATE_INCOME');
+  const [activeTemplateInfo, setActiveTemplateInfo] = useState(null);
+
   const [isLoadingSchemes, setIsLoadingSchemes] = useState(true);
   const [isLoadingRules, setIsLoadingRules] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [showConditionsGuide, setShowConditionsGuide] = useState(false);
 
   // Form State
   const [formData, setFormData] = useState({
     ruleName: '',
     field: 'annualFamilyIncome',
     operator: '<=',
-    expectedValue: '300000',
-    description: '',
+    expectedValue: '250000',
+    description: 'Family income below ₹2.5 lakh',
     isMandatory: true,
     isActive: true,
   });
@@ -134,7 +279,7 @@ const AdminRulesPage = () => {
   }, [querySchemeId]);
 
   // 2. Fetch Rules for selected scheme
-  const fetchRulesForScheme = async (schemeId, preserveSelectedRuleId = null) => {
+  const fetchRulesForScheme = async (schemeId, preserveRuleId = null) => {
     if (!schemeId) return;
     setIsLoadingRules(true);
     try {
@@ -143,19 +288,18 @@ const AdminRulesPage = () => {
         const fetchedRules = res.data.data;
         setRules(fetchedRules);
 
-        // Determine which rule to select
-        if (preserveSelectedRuleId && preserveSelectedRuleId !== 'NEW_RULE') {
-          const matched = fetchedRules.find((r) => r._id === preserveSelectedRuleId);
-          if (matched) {
-            handleSelectRule(matched._id, fetchedRules);
-            return;
-          }
+        // If specific rule was requested to remain selected
+        if (preserveRuleId) {
+          handleSelectOption(preserveRuleId, fetchedRules);
+          return;
         }
 
+        // If scheme already has configured rules, select the first configured rule
         if (fetchedRules.length > 0) {
-          handleSelectRule(fetchedRules[0]._id, fetchedRules);
+          handleSelectOption(fetchedRules[0]._id, fetchedRules);
         } else {
-          handleSelectRule('NEW_RULE', []);
+          // Default to the first common condition (Age or Income)
+          handleSelectOption('TEMPLATE_INCOME', []);
         }
       }
     } catch (err) {
@@ -172,56 +316,64 @@ const AdminRulesPage = () => {
     }
   }, [selectedSchemeId]);
 
-  // When user selects a rule from Dropdown 2 (or from the rules list)
-  const handleSelectRule = (ruleId, currentRules = rules) => {
-    setSelectedRuleId(ruleId);
+  // Handle Selection from Dropdown 2 (Configured rule, Common condition template, or Custom)
+  const handleSelectOption = (optionId, currentRules = rules) => {
+    setSelectedRuleId(optionId);
 
-    if (ruleId === 'NEW_RULE') {
-      setFormData({
-        ruleName: '',
-        field: 'annualFamilyIncome',
-        operator: '<=',
-        expectedValue: '300000',
-        description: 'Beneficiary annual income must not exceed the specified ceiling limit',
-        isMandatory: true,
-        isActive: true,
-      });
-      return;
-    }
-
-    const rule = currentRules.find((r) => r._id === ruleId);
-    if (rule) {
-      let valStr = rule.expectedValue;
+    // Case 1: Selected an existing saved rule for this scheme
+    const existingRule = currentRules.find((r) => r._id === optionId);
+    if (existingRule) {
+      setActiveTemplateInfo(null);
+      let valStr = existingRule.expectedValue;
       if (Array.isArray(valStr)) valStr = valStr.join(', ');
       else if (typeof valStr === 'object') valStr = JSON.stringify(valStr);
       else valStr = String(valStr);
 
       setFormData({
-        ruleName: rule.ruleName,
-        field: rule.field,
-        operator: rule.operator,
+        ruleName: existingRule.ruleName,
+        field: existingRule.field,
+        operator: existingRule.operator,
         expectedValue: valStr,
-        description: rule.description || '',
-        isMandatory: Boolean(rule.isMandatory),
-        isActive: Boolean(rule.isActive),
+        description: existingRule.description || '',
+        isMandatory: Boolean(existingRule.isMandatory),
+        isActive: Boolean(existingRule.isActive),
       });
+      return;
     }
+
+    // Case 2: Selected one of the 15 Common Eligibility Conditions
+    const template = COMMON_ELIGIBILITY_CONDITIONS.find((c) => c.id === optionId);
+    if (template) {
+      setActiveTemplateInfo(template);
+      const scheme = schemes.find((s) => s._id === selectedSchemeId);
+      const ruleTitle = `${template.name} Requirement (${template.example})`;
+
+      setFormData({
+        ruleName: ruleTitle,
+        field: template.field,
+        operator: template.operator,
+        expectedValue: template.expectedValue,
+        description: template.description,
+        isMandatory: template.isMandatory,
+        isActive: true,
+      });
+      return;
+    }
+
+    // Case 3: Custom New Rule
+    setActiveTemplateInfo(null);
+    setFormData({
+      ruleName: '',
+      field: 'annualFamilyIncome',
+      operator: '<=',
+      expectedValue: '',
+      description: '',
+      isMandatory: true,
+      isActive: true,
+    });
   };
 
-  // Apply Preset Template
-  const handleApplyPreset = (preset) => {
-    setFormData((prev) => ({
-      ...prev,
-      ruleName: preset.name,
-      field: preset.field,
-      operator: preset.operator,
-      expectedValue: preset.value,
-      description: preset.desc,
-    }));
-    showToast(`Loaded preset: ${preset.name}`, 'info');
-  };
-
-  // Save Rule (POST if NEW_RULE, PUT if existing)
+  // Save Rule (POST if template or custom, PUT if existing saved rule)
   const handleSaveRule = async (e) => {
     e.preventDefault();
     if (!formData.ruleName || !formData.field || !formData.operator || formData.expectedValue === '') {
@@ -254,13 +406,15 @@ const AdminRulesPage = () => {
         isActive: formData.isActive,
       };
 
-      if (selectedRuleId && selectedRuleId !== 'NEW_RULE') {
+      const isExistingDbRule = rules.some((r) => r._id === selectedRuleId);
+
+      if (isExistingDbRule) {
         await api.put(`/eligibility-rules/${selectedRuleId}`, payload);
         showToast('Rule updated and applied successfully!', 'success');
         fetchRulesForScheme(selectedSchemeId, selectedRuleId);
       } else {
         const res = await api.post('/eligibility-rules', payload);
-        showToast('New eligibility rule created and applied!', 'success');
+        showToast('Rule saved and applied to scheme!', 'success');
         fetchRulesForScheme(selectedSchemeId, res.data.data?._id);
       }
     } catch (err) {
@@ -272,7 +426,9 @@ const AdminRulesPage = () => {
 
   // Delete Rule
   const handleDeleteRule = async () => {
-    if (!selectedRuleId || selectedRuleId === 'NEW_RULE') return;
+    const isExistingDbRule = rules.some((r) => r._id === selectedRuleId);
+    if (!isExistingDbRule) return;
+
     if (!window.confirm(`Are you sure you want to delete rule "${formData.ruleName}"?`)) return;
 
     setIsDeleting(true);
@@ -290,7 +446,7 @@ const AdminRulesPage = () => {
   };
 
   const selectedScheme = schemes.find((s) => s._id === selectedSchemeId);
-  const isEditingExisting = selectedRuleId && selectedRuleId !== 'NEW_RULE';
+  const isExistingDbRule = rules.some((r) => r._id === selectedRuleId);
 
   // Preview generated text
   const previewText = `Condition: Citizen's ${formData.field} must satisfy [ ${formData.operator} ${formData.expectedValue} ]`;
@@ -312,20 +468,81 @@ const AdminRulesPage = () => {
             Eligibility Rule Builder
           </h1>
           <p className="text-xs text-slate-600 mt-0.5">
-            Select a scheme, pick any rule from the dropdown to edit its parameters, or create new criteria rules to apply.
+            Select a scheme, pick from the <strong>15 common eligibility condition templates</strong> (or configured scheme rules) to immediately open the editor, adjust parameters, and save.
           </p>
         </div>
 
-        {selectedScheme && (
-          <Link
-            to={`/schemes/${selectedScheme._id}`}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-colors self-start sm:self-center"
+        <div className="flex items-center gap-2 self-start sm:self-center">
+          <button
+            type="button"
+            onClick={() => setShowConditionsGuide(!showConditionsGuide)}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-50 hover:bg-blue-100 text-gov-secondary text-xs font-bold transition-colors cursor-pointer"
           >
-            <Eye className="w-3.5 h-3.5" />
-            <span>Show Scheme Page</span>
-          </Link>
-        )}
+            <BookOpen className="w-3.5 h-3.5" />
+            <span>{showConditionsGuide ? 'Hide' : 'View'} 15 Conditions Reference</span>
+          </button>
+
+          {selectedScheme && (
+            <Link
+              to={`/schemes/${selectedScheme._id}`}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-colors"
+            >
+              <Eye className="w-3.5 h-3.5" />
+              <span>Show Scheme Page</span>
+            </Link>
+          )}
+        </div>
       </div>
+
+      {/* 15 COMMON CONDITIONS REFERENCE TABLE (Collapsible) */}
+      {showConditionsGuide && (
+        <div className="bg-white rounded-2xl border border-blue-200 p-5 shadow-sm space-y-3 animate-fade-in">
+          <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+            <div className="flex items-center gap-2">
+              <Info className="w-4 h-4 text-gov-secondary" />
+              <h3 className="font-bold text-sm text-gov-primary">
+                Common Eligibility Conditions Reference Guide
+              </h3>
+            </div>
+            <span className="text-xs text-slate-500">Click any condition to immediately load it into Dropdown 2</span>
+          </div>
+
+          <div className="overflow-x-auto max-h-72 overflow-y-auto">
+            <table className="w-full text-left text-xs text-slate-700">
+              <thead className="bg-slate-50 text-slate-600 font-bold sticky top-0 border-b border-slate-200">
+                <tr>
+                  <th className="px-3 py-2 w-12">No.</th>
+                  <th className="px-3 py-2 w-44">Eligibility Condition</th>
+                  <th className="px-3 py-2">Standard Example</th>
+                  <th className="px-3 py-2 w-28 text-right">Action</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {COMMON_ELIGIBILITY_CONDITIONS.map((cond) => (
+                  <tr key={cond.id} className="hover:bg-blue-50/50 transition-colors">
+                    <td className="px-3 py-2 font-bold text-slate-500">{cond.number}</td>
+                    <td className="px-3 py-2 font-bold text-slate-900">{cond.name}</td>
+                    <td className="px-3 py-2 text-slate-600">{cond.example}</td>
+                    <td className="px-3 py-2 text-right">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          handleSelectOption(cond.id);
+                          setShowConditionsGuide(false);
+                          showToast(`Loaded ${cond.name} into Rule Editor`, 'info');
+                        }}
+                        className="px-2.5 py-1 rounded bg-blue-50 hover:bg-gov-secondary hover:text-white text-gov-secondary font-bold text-[11px] transition-colors cursor-pointer"
+                      >
+                        Apply Rule &rarr;
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
 
       {/* DUAL DROPDOWN SELECTOR BAR */}
       <div className="bg-white rounded-2xl border border-gov-border p-5 shadow-subtle space-y-4">
@@ -369,8 +586,8 @@ const AdminRulesPage = () => {
                 <Sliders className="w-4 h-4 text-gov-secondary" />
                 <span>2. Select Rule to Edit & Apply:</span>
               </span>
-              <span className="text-[11px] text-slate-400 font-semibold normal-case">
-                {rules.length} rule(s) configured
+              <span className="text-[11px] text-gov-secondary font-bold normal-case">
+                {rules.length} configured rule(s)
               </span>
             </label>
 
@@ -379,12 +596,12 @@ const AdminRulesPage = () => {
             ) : (
               <select
                 value={selectedRuleId}
-                onChange={(e) => handleSelectRule(e.target.value)}
-                className="w-full text-xs rounded-xl border border-gov-border p-3 bg-slate-50 font-bold focus:bg-white focus:outline-none focus:ring-2 focus:ring-gov-secondary text-slate-900 shadow-xs cursor-pointer"
+                onChange={(e) => handleSelectOption(e.target.value)}
+                className="w-full text-xs rounded-xl border border-blue-200 p-3 bg-white font-bold focus:outline-none focus:ring-2 focus:ring-gov-secondary text-slate-900 shadow-xs cursor-pointer"
               >
-                <option value="NEW_RULE">➕ + Create New Rule for this Scheme</option>
+                {/* 1. Saved Rules currently applied to this scheme */}
                 {rules.length > 0 && (
-                  <optgroup label={`Configured Rules for ${selectedScheme?.schemeName || 'Scheme'} (${rules.length})`}>
+                  <optgroup label={`✅ Currently Configured Scheme Rules (${rules.length})`}>
                     {rules.map((r) => (
                       <option key={r._id} value={r._id}>
                         {r.ruleName} — [{r.field} {r.operator} {JSON.stringify(r.expectedValue)}] {r.isMandatory ? '★ Mandatory' : '(Advisory)'}
@@ -392,44 +609,84 @@ const AdminRulesPage = () => {
                     ))}
                   </optgroup>
                 )}
+
+                {/* 2. The 15 Standard Common Eligibility Conditions */}
+                <optgroup label="📋 Standard Common Eligibility Conditions (Select to Open & Configure)">
+                  {COMMON_ELIGIBILITY_CONDITIONS.map((cond) => (
+                    <option key={cond.id} value={cond.id}>
+                      {cond.number}. {cond.name} — Example: {cond.example}
+                    </option>
+                  ))}
+                </optgroup>
+
+                {/* 3. Custom Blank Template */}
+                <option value="CUSTOM_NEW">➕ + Custom Condition (Blank Form)</option>
               </select>
             )}
           </div>
         </div>
+
+        {/* Selected condition context ribbon */}
+        <div className="pt-2 border-t border-slate-100 flex flex-wrap items-center justify-between text-xs text-slate-600 gap-2">
+          <div className="flex items-center gap-2">
+            <span className="font-semibold text-slate-500">Selected Condition Source:</span>
+            {isExistingDbRule ? (
+              <span className="font-bold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200 flex items-center gap-1">
+                <Check className="w-3 h-3" />
+                Saved in Database for "{selectedScheme?.schemeName}"
+              </span>
+            ) : activeTemplateInfo ? (
+              <span className="font-bold text-gov-secondary bg-blue-50 px-2.5 py-0.5 rounded-full border border-blue-200 flex items-center gap-1">
+                <Sparkles className="w-3 h-3" />
+                Template #{activeTemplateInfo.number}: {activeTemplateInfo.name} ({activeTemplateInfo.example})
+              </span>
+            ) : (
+              <span className="font-bold text-amber-700 bg-amber-50 px-2.5 py-0.5 rounded-full border border-amber-200">
+                Custom Condition Template
+              </span>
+            )}
+          </div>
+
+          <span className="text-[11px] text-slate-400">
+            Edit parameters below and click "Save & Apply Rule"
+          </span>
+        </div>
       </div>
 
-      {/* RULE EDITOR PANEL (Inline editing as requested) */}
+      {/* CONDITION EDITOR (Opens immediately populated for the selected rule/template) */}
       <div className="bg-white rounded-2xl border border-gov-border shadow-subtle overflow-hidden">
         {/* Editor Header */}
         <div className="bg-slate-50/80 px-6 py-4 border-b border-gov-border flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="flex items-center gap-2.5">
             <span
               className={`p-1.5 rounded-lg ${
-                isEditingExisting
-                  ? 'bg-amber-100 text-amber-900'
-                  : 'bg-emerald-100 text-emerald-900'
+                isExistingDbRule
+                  ? 'bg-emerald-100 text-emerald-900'
+                  : 'bg-blue-100 text-gov-secondary'
               }`}
             >
               <Sliders className="w-4 h-4" />
             </span>
             <div>
               <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                {isEditingExisting ? 'Active Rule Editor' : 'Rule Formulation Desk'}
+                {isExistingDbRule ? 'Editing Configured Scheme Rule' : 'Condition Template Formulation'}
               </div>
               <h2 className="text-base font-extrabold text-slate-900">
-                {isEditingExisting ? `Editing: ${formData.ruleName || 'Selected Rule'}` : `Configure New Rule for "${selectedScheme?.schemeName || 'Scheme'}"`}
+                {isExistingDbRule
+                  ? `Editing Saved Rule: "${formData.ruleName}"`
+                  : `Configuring Condition for: "${selectedScheme?.schemeName || 'Scheme'}"`}
               </h2>
             </div>
           </div>
 
           <div className="flex items-center gap-2">
-            {isEditingExisting && (
+            {isExistingDbRule && (
               <Button
                 variant="outline"
                 size="sm"
                 onClick={handleDeleteRule}
                 isLoading={isDeleting}
-                className="text-rose-600 hover:bg-rose-50 border-rose-200 gap-1 text-xs"
+                className="text-rose-600 hover:bg-rose-50 border-rose-200 gap-1 text-xs cursor-pointer"
               >
                 <Trash2 className="w-3.5 h-3.5" />
                 <span>Delete Rule</span>
@@ -439,31 +696,13 @@ const AdminRulesPage = () => {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => handleSelectRule('NEW_RULE')}
-              className="gap-1 text-xs"
+              onClick={() => handleSelectOption('CUSTOM_NEW')}
+              className="gap-1 text-xs cursor-pointer"
             >
               <Plus className="w-3.5 h-3.5" />
-              <span>+ New Rule</span>
+              <span>Blank Custom Rule</span>
             </Button>
           </div>
-        </div>
-
-        {/* Quick Presets Strip */}
-        <div className="px-6 py-2.5 bg-blue-50/50 border-b border-blue-100/70 flex flex-wrap items-center gap-2 text-xs">
-          <span className="font-bold text-gov-secondary flex items-center gap-1 shrink-0">
-            <Sparkles className="w-3.5 h-3.5" />
-            Quick Presets:
-          </span>
-          {RULE_PRESETS.map((preset, idx) => (
-            <button
-              key={idx}
-              type="button"
-              onClick={() => handleApplyPreset(preset)}
-              className="px-2.5 py-1 rounded-md bg-white border border-blue-200 hover:border-gov-secondary text-slate-700 hover:text-gov-secondary text-[11px] font-semibold transition-colors cursor-pointer shadow-2xs"
-            >
-              {preset.name}
-            </button>
-          ))}
         </div>
 
         {/* Editor Form */}
@@ -474,7 +713,7 @@ const AdminRulesPage = () => {
                 label="Rule Name / Public Condition Title"
                 value={formData.ruleName}
                 onChange={(e) => setFormData({ ...formData, ruleName: e.target.value })}
-                placeholder="e.g. Annual Income Under ₹3 Lakh"
+                placeholder="e.g. Age Criteria (Applicant must be 18–60 years old)"
                 required
               />
             </div>
@@ -503,10 +742,13 @@ const AdminRulesPage = () => {
                 type="text"
                 value={formData.expectedValue}
                 onChange={(e) => setFormData({ ...formData, expectedValue: e.target.value })}
-                placeholder="e.g. 300000 or Farmer or SC, OBC"
+                placeholder="e.g. 18, 60 or 250000 or Farmer or Female"
                 className="w-full text-xs rounded-lg border border-gov-border p-2 focus:outline-none focus:ring-2 focus:ring-gov-secondary font-mono bg-white"
                 required
               />
+              <span className="text-[10px] text-gov-muted mt-1 block">
+                For BETWEEN or IN, separate values with commas (e.g. 18, 60 or SC, ST, OBC).
+              </span>
             </div>
           </div>
 
@@ -518,7 +760,7 @@ const AdminRulesPage = () => {
               rows={2}
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              placeholder="e.g. Beneficiary family income must not exceed 3 lakhs per annum to qualify for DBT subsidy."
+              placeholder="e.g. Applicant must be between 18 and 60 years old to be considered eligible."
               className="w-full text-xs rounded-lg border border-gov-border p-2.5 bg-white focus:outline-none focus:ring-2 focus:ring-gov-secondary"
             />
           </div>
@@ -564,17 +806,17 @@ const AdminRulesPage = () => {
                 variant="primary"
                 size="md"
                 isLoading={isSaving}
-                className="gap-2 shadow-sm font-bold text-sm px-6"
+                className="gap-2 shadow-sm font-bold text-sm px-6 cursor-pointer"
               >
                 <Save className="w-4 h-4" />
-                <span>{isEditingExisting ? 'Save & Apply Rule' : 'Create & Apply Rule'}</span>
+                <span>{isExistingDbRule ? 'Save & Apply Rule' : 'Save Rule to Scheme'}</span>
               </Button>
             </div>
           </div>
         </form>
       </div>
 
-      {/* ALL CONFIGURED RULES FOR THIS SCHEME (Suite Overview) */}
+      {/* CONFIGURED RULES FOR THIS SCHEME */}
       <div className="space-y-3">
         <div className="flex items-center justify-between">
           <h3 className="text-sm font-bold text-gov-primary flex items-center gap-2">
@@ -586,8 +828,8 @@ const AdminRulesPage = () => {
 
         {rules.length === 0 ? (
           <EmptyState
-            title="No rules applied yet"
-            description="Use the editor above to configure the first eligibility rule for this scheme."
+            title="No rules configured for this scheme yet"
+            description="Select any of the 15 Common Eligibility Conditions in Dropdown 2 above and click 'Save Rule to Scheme' to apply it."
           />
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -596,7 +838,7 @@ const AdminRulesPage = () => {
               return (
                 <div
                   key={rule._id}
-                  onClick={() => handleSelectRule(rule._id)}
+                  onClick={() => handleSelectOption(rule._id)}
                   className={`p-4 rounded-xl border transition-all cursor-pointer flex flex-col justify-between ${
                     isSelected
                       ? 'border-gov-secondary bg-blue-50/40 shadow-sm ring-2 ring-gov-secondary/20'
