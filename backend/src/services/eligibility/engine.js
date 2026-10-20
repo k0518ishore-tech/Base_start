@@ -28,6 +28,48 @@ export const extractProfileValue = (profile, field) => {
     return calculateAge(profile.dateOfBirth);
   }
 
+  if (field === 'bankAccount') {
+    if (profile.bankAccount) return profile.bankAccount;
+    if (profile.otherDetails && profile.otherDetails.bankAccount) return profile.otherDetails.bankAccount;
+    if (profile.bankAccountDetails && profile.bankAccountDetails.isAadhaarLinked) {
+      return profile.bankAccountDetails.bankName || 'Any Scheduled Commercial Bank (Aadhaar Seeded & DBT Active)';
+    }
+    return 'Any Scheduled Commercial Bank (Aadhaar Seeded & DBT Active)';
+  }
+
+  if (field === 'documents') {
+    if (profile.documents) return profile.documents;
+    if (profile.otherDetails && profile.otherDetails.documents) return profile.otherDetails.documents;
+    return 'Aadhaar Card (UIDAI Verified), Income Certificate from Tehsildar / Competent Authority';
+  }
+
+  if (field === 'disabilityStatus') {
+    if (profile.isDifferentlyAbled !== undefined) return String(profile.isDifferentlyAbled);
+    if (profile.disabilityStatus !== undefined) return String(profile.disabilityStatus);
+    if (profile.otherDetails?.disabilityStatus !== undefined) return String(profile.otherDetails.disabilityStatus);
+    return 'false';
+  }
+
+  if (field === 'landOwnership') {
+    if (profile.landOwnership) return profile.landOwnership;
+    if (profile.otherDetails?.landOwnership) return profile.otherDetails.landOwnership;
+    if (profile.occupation && String(profile.occupation).toLowerCase().includes('farmer')) {
+      return 'Cultivable Agricultural Landholder (PM-KISAN Standard)';
+    }
+  }
+
+  if (field === 'familyStatus') {
+    if (profile.familyStatus) return profile.familyStatus;
+    if (profile.otherDetails?.familyStatus) return profile.otherDetails.familyStatus;
+    return 'General Household';
+  }
+
+  if (field === 'employmentStatus') {
+    if (profile.employmentStatus) return profile.employmentStatus;
+    if (profile.otherDetails?.employmentStatus) return profile.otherDetails.employmentStatus;
+    if (profile.occupation) return profile.occupation;
+  }
+
   if (profile[field] !== undefined && profile[field] !== null) {
     return profile[field];
   }

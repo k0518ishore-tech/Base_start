@@ -1,6 +1,10 @@
 import EligibilityRule from '../models/EligibilityRule.js';
 import Scheme from '../models/Scheme.js';
-import { recordAuditLog, createSystemNotification } from '../services/notifications/notificationService.js';
+import {
+  recordAuditLog,
+  createSystemNotification,
+  notifyEligibleCitizensForScheme,
+} from '../services/notifications/notificationService.js';
 
 const ALLOWED_OPERATORS = ['==', '!=', '>', '>=', '<', '<=', 'IN', 'NOT_IN', 'BETWEEN', 'EXISTS'];
 
@@ -69,6 +73,11 @@ export const createRule = async (req, res, next) => {
       relatedEntityId: newRule._id,
     });
 
+    // Re-evaluate and notify only citizens who are ELIGIBLE under the updated rules
+    notifyEligibleCitizensForScheme(scheme._id).catch((e) =>
+      console.error('[createRule] Targeted notification dispatch error:', e)
+    );
+
     return res.status(201).json({
       success: true,
       message: 'Eligibility rule created successfully.',
@@ -113,6 +122,11 @@ export const updateRule = async (req, res, next) => {
       entityId: rule._id,
       details: { ruleName: rule.ruleName, isActive: rule.isActive },
     });
+
+    // Re-evaluate and notify only citizens who are ELIGIBLE under the updated rules
+    notifyEligibleCitizensForScheme(rule.schemeId).catch((e) =>
+      console.error('[updateRule] Targeted notification dispatch error:', e)
+    );
 
     return res.status(200).json({
       success: true,

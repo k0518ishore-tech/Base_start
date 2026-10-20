@@ -5,7 +5,11 @@ import Bookmark from '../models/Bookmark.js';
 import SearchHistory from '../models/SearchHistory.js';
 import UserProfile from '../models/UserProfile.js';
 import { evaluateSchemeEligibility } from '../services/eligibility/engine.js';
-import { createSystemNotification, recordAuditLog } from '../services/notifications/notificationService.js';
+import {
+  createSystemNotification,
+  recordAuditLog,
+  notifyEligibleCitizensForScheme,
+} from '../services/notifications/notificationService.js';
 
 const slugify = (text) => {
   return text
@@ -469,18 +473,28 @@ export const createScheme = async (req, res, next) => {
       details: { name: newScheme.schemeName },
     });
 
+    // Dispatch targeted notifications strictly to ELIGIBLE citizens
+    let notifiedCount = 0;
+    try {
+      const dispatchResult = await notifyEligibleCitizensForScheme(newScheme._id);
+      notifiedCount = dispatchResult.notifiedCount || 0;
+    } catch (e) {
+      console.error('[createScheme] Targeted notification dispatch error:', e);
+    }
+
     await createSystemNotification({
       eventType: 'SCHEME_CREATED',
       title: 'New Scheme Published',
-      description: `Scheme "${newScheme.schemeName}" was added under ${dept.departmentName}.`,
+      description: `Scheme "${newScheme.schemeName}" was added under ${dept.departmentName}. Targeted alerts delivered to ${notifiedCount} eligible citizen(s).`,
       relatedEntityType: 'Scheme',
       relatedEntityId: newScheme._id,
     });
 
     return res.status(201).json({
       success: true,
-      message: 'Scheme created successfully.',
+      message: `Scheme created successfully. ${notifiedCount} eligible citizen(s) were notified.`,
       data: newScheme,
+      notifiedCitizensCount: notifiedCount,
     });
   } catch (error) {
     next(error);
@@ -526,6 +540,13 @@ export const updateScheme = async (req, res, next) => {
       relatedEntityType: 'Scheme',
       relatedEntityId: updatedScheme._id,
     });
+
+    // Check if updated scheme has eligible citizens waiting for notifications
+    if (updatedScheme.isActive) {
+      notifyEligibleCitizensForScheme(updatedScheme._id).catch((e) =>
+        console.error('[updateScheme] Notification dispatch error:', e)
+      );
+    }
 
     return res.status(200).json({
       success: true,
@@ -615,6 +636,21 @@ export const updateVerificationStatus = async (req, res, next) => {
       success: true,
       message: `Scheme verification status updated to ${verificationStatus}`,
       data: scheme,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Admin: Manually or programmatically trigger eligibility check and notifications for a scheme
+export const triggerSchemeEligibilityNotifications = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const result = await notifyEligibleCitizensForScheme(id);
+    return res.status(200).json({
+      success: true,
+      message: `Eligibility evaluation completed. Dispatched targeted alerts to ${result.notifiedCount} eligible citizen(s).`,
+      data: result,
     });
   } catch (error) {
     next(error);
