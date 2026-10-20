@@ -20,6 +20,16 @@ import {
   Info,
   ChevronDown,
   ChevronUp,
+  CreditCard,
+  FolderCheck,
+  Users,
+  GraduationCap,
+  MapPin,
+  Briefcase,
+  Calendar,
+  IndianRupee,
+  ShieldAlert,
+  Settings2,
 } from 'lucide-react';
 import Button from '../../components/common/Button';
 import Input from '../../components/common/Input';
@@ -30,7 +40,7 @@ import EmptyState from '../../components/common/EmptyState';
 import { useToast } from '../../context/ToastContext';
 import api from '../../services/api';
 
-// 15 Citizen Profile & Criteria Fields
+// 15 Profile & Criteria Fields
 const RULE_FIELDS = [
   { value: 'age', label: '1. Age (Years computed from DOB)' },
   { value: 'annualFamilyIncome', label: '2. Annual Family Income (₹ Number)' },
@@ -62,7 +72,127 @@ const OPERATORS = [
   { value: 'EXISTS', label: 'EXISTS (Attribute / certificate must be provided)' },
 ];
 
-// The 15 Standard Common Eligibility Conditions requested by the user
+// Bank Options for Condition #13
+const BANK_OPTIONS = [
+  'Any Scheduled Commercial Bank (Aadhaar Seeded & DBT Active)',
+  'State Bank of India (SBI)',
+  'Punjab National Bank (PNB)',
+  'Bank of Baroda',
+  'Canara Bank',
+  'Union Bank of India',
+  'Bank of India',
+  'Central Bank of India',
+  'Indian Bank',
+  'HDFC Bank',
+  'ICICI Bank',
+  'Axis Bank',
+  'Regional Rural Bank (Gramin Bank / RRB)',
+  'Post Office Savings Bank (India Post Payments Bank - IPPB)',
+  'District Central Cooperative Bank (DCCB)',
+  'PM Jan Dhan Yojana (PMJDY) Zero Balance Savings Account',
+];
+
+// Document Options for Condition #14
+const DOCUMENT_OPTIONS = [
+  'Aadhaar Card (UIDAI Verified)',
+  'Income Certificate from Tehsildar / Competent Authority',
+  'Caste / Community Certificate (SC/ST/OBC/EWS)',
+  'Land Revenue Records (RoR / 7-12 / Khasra-Khatauni / Patta)',
+  'Active Bank Passbook (with IFSC and Account No.)',
+  'Ration Card (BPL / AAY / Antyodaya / PHH)',
+  'Domicile / Permanent Residence Certificate',
+  'Disability Certificate / Unique Disability ID (UDID)',
+  'Age / Date of Birth Certificate',
+  'Educational Marksheet / Degree Certificate',
+  'Self-Declaration Affidavit of Unemployment',
+  'Farmer Registration / PM-KISAN ID Card',
+  'MGNREGA Job Card',
+];
+
+// States List for Condition #3
+const INDIAN_STATES = [
+  'All India (Central / Nationwide Scheme)',
+  'Andhra Pradesh',
+  'Arunachal Pradesh',
+  'Assam',
+  'Bihar',
+  'Chhattisgarh',
+  'Delhi (NCT)',
+  'Goa',
+  'Gujarat',
+  'Haryana',
+  'Himachal Pradesh',
+  'Jammu and Kashmir',
+  'Jharkhand',
+  'Karnataka',
+  'Kerala',
+  'Madhya Pradesh',
+  'Maharashtra',
+  'Manipur',
+  'Meghalaya',
+  'Mizoram',
+  'Nagaland',
+  'Odisha',
+  'Punjab',
+  'Rajasthan',
+  'Sikkim',
+  'Tamil Nadu',
+  'Telangana',
+  'Tripura',
+  'Uttar Pradesh',
+  'Uttarakhand',
+  'West Bengal',
+];
+
+// Education Levels for Condition #5
+const EDUCATION_OPTIONS = [
+  'No Formal Education Barrier',
+  'Primary School (Class 5 Passed)',
+  'Middle School (Class 8 Passed)',
+  'Class 10 (Secondary School Passed)',
+  'Class 12 (Higher Secondary / Intermediate)',
+  'ITI / Polytechnic Diploma',
+  'Graduate (Bachelor Degree - BA, BSc, BCom, BTech)',
+  'Post Graduate (Master Degree / PhD)',
+];
+
+// Occupations for Condition #6
+const OCCUPATION_OPTIONS = [
+  'Farmer / Agricultural Cultivator',
+  'Agricultural Wage Laborer',
+  'Street Vendor / Hawker',
+  'Artisan / Handloom Weaver',
+  'Construction / Unorganized Worker',
+  'Student / Scholar',
+  'Self-Employed Micro-Entrepreneur',
+  'Fisherman / Marine Worker',
+  'Healthcare / ASHA / Anganwadi Worker',
+  'Sanitation / Municipal Worker',
+  'Unemployed Citizen',
+];
+
+// Social Categories for Condition #7
+const COMMUNITY_OPTIONS = ['SC', 'ST', 'OBC', 'EWS', 'General', 'Notified Minority'];
+
+// Family Household Status for Condition #11
+const FAMILY_STATUS_OPTIONS = [
+  'Antyodaya Anna Yojana (AAY - Poorest of Poor)',
+  'Below Poverty Line (BPL Ration Card)',
+  'Priority Household (PHH Ration Card)',
+  'Female-Headed Single Parent Household',
+  'Destitute / Homeless Household',
+];
+
+// Existing Benefits Exclusions for Condition #12
+const BENEFIT_EXCLUSION_OPTIONS = [
+  'Must not receive Central / State Old Age or Widow Pension',
+  'Must not be an active Income Tax Payee',
+  'Must not be a Regular Government or PSU Employee',
+  'Must not receive PM-KISAN or duplicate DBT benefits',
+  'Must not own motorized commercial agricultural equipment',
+];
+
+// The 15 Standard Common Eligibility Conditions
 export const COMMON_ELIGIBILITY_CONDITIONS = [
   {
     id: 'TEMPLATE_AGE',
@@ -93,8 +223,8 @@ export const COMMON_ELIGIBILITY_CONDITIONS = [
     example: 'Must be an Indian citizen or resident of a particular state',
     field: 'state',
     operator: 'IN',
-    expectedValue: 'All India',
-    description: 'Applicant must be an Indian citizen and resident of the specified State / Territory.',
+    expectedValue: 'All India (Central / Nationwide Scheme)',
+    description: 'Applicant must be a resident of the specified State / Territory.',
     isMandatory: true,
   },
   {
@@ -115,7 +245,7 @@ export const COMMON_ELIGIBILITY_CONDITIONS = [
     example: 'Must have completed Class 10',
     field: 'education',
     operator: 'IN',
-    expectedValue: 'Class 10, Class 12, Graduate, Post Graduate',
+    expectedValue: 'Class 10 (Secondary School Passed)',
     description: 'Applicant must have completed at least Class 10 secondary qualification.',
     isMandatory: true,
   },
@@ -126,7 +256,7 @@ export const COMMON_ELIGIBILITY_CONDITIONS = [
     example: 'Must be a farmer or registered worker',
     field: 'occupation',
     operator: 'IN',
-    expectedValue: 'Farmer, Agricultural Worker, Artisan',
+    expectedValue: 'Farmer / Agricultural Cultivator',
     description: 'Applicant primary occupation must be a farmer or registered wage worker.',
     isMandatory: true,
   },
@@ -170,7 +300,7 @@ export const COMMON_ELIGIBILITY_CONDITIONS = [
     example: 'Must own or cultivate agricultural land',
     field: 'landOwnership',
     operator: '==',
-    expectedValue: 'Cultivable Landholder',
+    expectedValue: 'Cultivable Agricultural Landholder',
     description: 'Beneficiary must hold cultivable land ownership records or cultivate farm holdings.',
     isMandatory: true,
   },
@@ -181,7 +311,7 @@ export const COMMON_ELIGIBILITY_CONDITIONS = [
     example: 'Must belong to a specified household category',
     field: 'familyStatus',
     operator: 'IN',
-    expectedValue: 'BPL, Antyodaya Anna Yojana (AAY), Priority Household (PHH)',
+    expectedValue: 'Below Poverty Line (BPL Ration Card)',
     description: 'Household must belong to a recognized BPL or Antyodaya ration card category.',
     isMandatory: true,
   },
@@ -192,7 +322,7 @@ export const COMMON_ELIGIBILITY_CONDITIONS = [
     example: 'Must not already receive certain overlapping benefits',
     field: 'existingBenefits',
     operator: '!=',
-    expectedValue: 'Overlapping Pension / DBT Subsidy',
+    expectedValue: 'Must not receive Central / State Old Age or Widow Pension',
     description: 'Applicant must not already receive overlapping welfare pension or identical subsidy.',
     isMandatory: true,
   },
@@ -203,7 +333,7 @@ export const COMMON_ELIGIBILITY_CONDITIONS = [
     example: 'Must have an eligible bank account',
     field: 'bankAccount',
     operator: '==',
-    expectedValue: 'Aadhaar-Seeded DBT Account',
+    expectedValue: 'Any Scheduled Commercial Bank (Aadhaar Seeded & DBT Active)',
     description: 'Applicant must have an active savings bank account linked to Aadhaar for DBT transfer.',
     isMandatory: true,
   },
@@ -214,7 +344,7 @@ export const COMMON_ELIGIBILITY_CONDITIONS = [
     example: 'Must provide required certificates and identity proof',
     field: 'documents',
     operator: 'EXISTS',
-    expectedValue: 'Aadhaar Card, Income Certificate, Caste Certificate',
+    expectedValue: 'Aadhaar Card (UIDAI Verified), Income Certificate from Tehsildar / Competent Authority',
     description: 'Applicant must submit required identity, income, and category certificates.',
     isMandatory: true,
   },
@@ -225,7 +355,7 @@ export const COMMON_ELIGIBILITY_CONDITIONS = [
     example: 'Must reside in a specified district or region',
     field: 'district',
     operator: 'EXISTS',
-    expectedValue: 'Designated Aspirational District',
+    expectedValue: 'Rural Gram Panchayat Areas Only',
     description: 'Applicant must reside in a notified district or designated regional block.',
     isMandatory: true,
   },
@@ -247,6 +377,7 @@ const AdminRulesPage = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [showConditionsGuide, setShowConditionsGuide] = useState(false);
+  const [showRawValueInput, setShowRawValueInput] = useState(false);
 
   // Form State
   const [formData, setFormData] = useState({
@@ -298,7 +429,7 @@ const AdminRulesPage = () => {
         if (fetchedRules.length > 0) {
           handleSelectOption(fetchedRules[0]._id, fetchedRules);
         } else {
-          // Default to the first common condition (Age or Income)
+          // Default to Annual Income condition
           handleSelectOption('TEMPLATE_INCOME', []);
         }
       }
@@ -316,11 +447,11 @@ const AdminRulesPage = () => {
     }
   }, [selectedSchemeId]);
 
-  // Handle Selection from Dropdown 2 (Configured rule, Common condition template, or Custom)
+  // Handle Selection from Dropdown 2
   const handleSelectOption = (optionId, currentRules = rules) => {
     setSelectedRuleId(optionId);
 
-    // Case 1: Selected an existing saved rule for this scheme
+    // Case 1: Selected an existing saved rule
     const existingRule = currentRules.find((r) => r._id === optionId);
     if (existingRule) {
       setActiveTemplateInfo(null);
@@ -345,7 +476,6 @@ const AdminRulesPage = () => {
     const template = COMMON_ELIGIBILITY_CONDITIONS.find((c) => c.id === optionId);
     if (template) {
       setActiveTemplateInfo(template);
-      const scheme = schemes.find((s) => s._id === selectedSchemeId);
       const ruleTitle = `${template.name} Requirement (${template.example})`;
 
       setFormData({
@@ -373,7 +503,46 @@ const AdminRulesPage = () => {
     });
   };
 
-  // Save Rule (POST if template or custom, PUT if existing saved rule)
+  // Helper for multi-select checklist toggles
+  const handleToggleMultiItem = (item) => {
+    const currentItems = formData.expectedValue
+      ? formData.expectedValue.split(',').map((s) => s.trim()).filter(Boolean)
+      : [];
+
+    let updatedItems;
+    if (currentItems.includes(item)) {
+      updatedItems = currentItems.filter((i) => i !== item);
+    } else {
+      updatedItems = [...currentItems, item];
+    }
+    setFormData({ ...formData, expectedValue: updatedItems.join(', ') });
+  };
+
+  // Helper to parse age range (min, max)
+  const getAgeValues = () => {
+    if (formData.field !== 'age') return { min: 18, max: 60 };
+    const parts = String(formData.expectedValue).split(',').map((s) => parseInt(s.trim(), 10));
+    return {
+      min: !isNaN(parts[0]) ? parts[0] : 18,
+      max: parts.length > 1 && !isNaN(parts[1]) ? parts[1] : 60,
+    };
+  };
+
+  const handleUpdateAge = (type, val) => {
+    const current = getAgeValues();
+    const updated = {
+      ...current,
+      [type]: Math.max(0, parseInt(val, 10) || 0),
+    };
+    setFormData({
+      ...formData,
+      operator: 'BETWEEN',
+      expectedValue: `${updated.min}, ${updated.max}`,
+      description: `Applicant must be between ${updated.min} and ${updated.max} years of age.`,
+    });
+  };
+
+  // Save Rule
   const handleSaveRule = async (e) => {
     e.preventDefault();
     if (!formData.ruleName || !formData.field || !formData.operator || formData.expectedValue === '') {
@@ -383,7 +552,6 @@ const AdminRulesPage = () => {
 
     setIsSaving(true);
     try {
-      // Parse expected value according to operator
       let parsedVal = formData.expectedValue;
       if (['<', '<=', '>', '>='].includes(formData.operator)) {
         parsedVal = Number(formData.expectedValue);
@@ -448,7 +616,7 @@ const AdminRulesPage = () => {
   const selectedScheme = schemes.find((s) => s._id === selectedSchemeId);
   const isExistingDbRule = rules.some((r) => r._id === selectedRuleId);
 
-  // Preview generated text
+  // Live preview string
   const previewText = `Condition: Citizen's ${formData.field} must satisfy [ ${formData.operator} ${formData.expectedValue} ]`;
 
   return (
@@ -468,7 +636,7 @@ const AdminRulesPage = () => {
             Eligibility Rule Builder
           </h1>
           <p className="text-xs text-slate-600 mt-0.5">
-            Select a scheme, pick from the <strong>15 common eligibility condition templates</strong> (or configured scheme rules) to immediately open the editor, adjust parameters, and save.
+            Select a scheme, pick from the <strong>15 common eligibility condition templates</strong>, and customize condition parameters using tailored form controls (bank dropdowns, certificate checklists, age ranges, etc.).
           </p>
         </div>
 
@@ -504,7 +672,7 @@ const AdminRulesPage = () => {
                 Common Eligibility Conditions Reference Guide
               </h3>
             </div>
-            <span className="text-xs text-slate-500">Click any condition to immediately load it into Dropdown 2</span>
+            <span className="text-xs text-slate-500">Click any condition to immediately configure it in Dropdown 2</span>
           </div>
 
           <div className="overflow-x-auto max-h-72 overflow-y-auto">
@@ -599,7 +767,7 @@ const AdminRulesPage = () => {
                 onChange={(e) => handleSelectOption(e.target.value)}
                 className="w-full text-xs rounded-xl border border-blue-200 p-3 bg-white font-bold focus:outline-none focus:ring-2 focus:ring-gov-secondary text-slate-900 shadow-xs cursor-pointer"
               >
-                {/* 1. Saved Rules currently applied to this scheme */}
+                {/* 1. Saved Rules currently configured in MongoDB */}
                 {rules.length > 0 && (
                   <optgroup label={`✅ Currently Configured Scheme Rules (${rules.length})`}>
                     {rules.map((r) => (
@@ -629,52 +797,55 @@ const AdminRulesPage = () => {
         {/* Selected condition context ribbon */}
         <div className="pt-2 border-t border-slate-100 flex flex-wrap items-center justify-between text-xs text-slate-600 gap-2">
           <div className="flex items-center gap-2">
-            <span className="font-semibold text-slate-500">Selected Condition Source:</span>
+            <span className="font-semibold text-slate-500">Active Condition Field:</span>
             {isExistingDbRule ? (
               <span className="font-bold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200 flex items-center gap-1">
                 <Check className="w-3 h-3" />
-                Saved in Database for "{selectedScheme?.schemeName}"
+                Saved in Database: {formData.ruleName}
               </span>
             ) : activeTemplateInfo ? (
               <span className="font-bold text-gov-secondary bg-blue-50 px-2.5 py-0.5 rounded-full border border-blue-200 flex items-center gap-1">
                 <Sparkles className="w-3 h-3" />
-                Template #{activeTemplateInfo.number}: {activeTemplateInfo.name} ({activeTemplateInfo.example})
+                Condition #{activeTemplateInfo.number}: {activeTemplateInfo.name} ({activeTemplateInfo.example})
               </span>
             ) : (
               <span className="font-bold text-amber-700 bg-amber-50 px-2.5 py-0.5 rounded-full border border-amber-200">
-                Custom Condition Template
+                Custom Condition Form
               </span>
             )}
           </div>
 
-          <span className="text-[11px] text-slate-400">
-            Edit parameters below and click "Save & Apply Rule"
-          </span>
+          <button
+            type="button"
+            onClick={() => setShowRawValueInput(!showRawValueInput)}
+            className="text-[11px] font-semibold text-gov-secondary hover:underline flex items-center gap-1 cursor-pointer"
+          >
+            <Settings2 className="w-3 h-3" />
+            <span>{showRawValueInput ? 'Use Tailored UI Controls' : 'Use Raw Text Value Input'}</span>
+          </button>
         </div>
       </div>
 
-      {/* CONDITION EDITOR (Opens immediately populated for the selected rule/template) */}
+      {/* DYNAMIC CONDITION EDITOR PANEL */}
       <div className="bg-white rounded-2xl border border-gov-border shadow-subtle overflow-hidden">
         {/* Editor Header */}
         <div className="bg-slate-50/80 px-6 py-4 border-b border-gov-border flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="flex items-center gap-2.5">
             <span
               className={`p-1.5 rounded-lg ${
-                isExistingDbRule
-                  ? 'bg-emerald-100 text-emerald-900'
-                  : 'bg-blue-100 text-gov-secondary'
+                isExistingDbRule ? 'bg-emerald-100 text-emerald-900' : 'bg-blue-100 text-gov-secondary'
               }`}
             >
               <Sliders className="w-4 h-4" />
             </span>
             <div>
               <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                {isExistingDbRule ? 'Editing Configured Scheme Rule' : 'Condition Template Formulation'}
+                {isExistingDbRule ? 'Active Rule Editor' : 'Condition Configuration Desk'}
               </div>
               <h2 className="text-base font-extrabold text-slate-900">
                 {isExistingDbRule
                   ? `Editing Saved Rule: "${formData.ruleName}"`
-                  : `Configuring Condition for: "${selectedScheme?.schemeName || 'Scheme'}"`}
+                  : `Configuring Rule for: "${selectedScheme?.schemeName || 'Scheme'}"`}
               </h2>
             </div>
           </div>
@@ -706,14 +877,15 @@ const AdminRulesPage = () => {
         </div>
 
         {/* Editor Form */}
-        <form onSubmit={handleSaveRule} className="p-6 space-y-5">
+        <form onSubmit={handleSaveRule} className="p-6 space-y-6">
+          {/* Top metadata row */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="md:col-span-3">
               <Input
                 label="Rule Name / Public Condition Title"
                 value={formData.ruleName}
                 onChange={(e) => setFormData({ ...formData, ruleName: e.target.value })}
-                placeholder="e.g. Age Criteria (Applicant must be 18–60 years old)"
+                placeholder="e.g. Age Limit (Applicant must be 18–60 years old)"
                 required
               />
             </div>
@@ -736,21 +908,615 @@ const AdminRulesPage = () => {
 
             <div>
               <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
-                Target Threshold Value <span className="text-gov-error">*</span>
+                Raw Value Output <span className="text-gov-error">*</span>
               </label>
               <input
                 type="text"
                 value={formData.expectedValue}
                 onChange={(e) => setFormData({ ...formData, expectedValue: e.target.value })}
-                placeholder="e.g. 18, 60 or 250000 or Farmer or Female"
-                className="w-full text-xs rounded-lg border border-gov-border p-2 focus:outline-none focus:ring-2 focus:ring-gov-secondary font-mono bg-white"
+                placeholder="e.g. 18, 60 or 250000 or Female"
+                className="w-full text-xs rounded-lg border border-gov-border p-2 focus:outline-none focus:ring-2 focus:ring-gov-secondary font-mono bg-slate-50 font-bold"
                 required
               />
-              <span className="text-[10px] text-gov-muted mt-1 block">
-                For BETWEEN or IN, separate values with commas (e.g. 18, 60 or SC, ST, OBC).
-              </span>
             </div>
           </div>
+
+          {/* DYNAMIC FIELD CONTROL WIDGET (Changes specifically based on selected rule) */}
+          {!showRawValueInput && (
+            <div className="p-5 rounded-2xl border border-blue-200 bg-blue-50/40 space-y-3">
+              <div className="flex items-center justify-between border-b border-blue-100 pb-2">
+                <span className="text-xs font-bold text-gov-primary uppercase tracking-wider flex items-center gap-1.5">
+                  <Sparkles className="w-4 h-4 text-gov-secondary" />
+                  <span>Tailored Input Controls for "{formData.field}":</span>
+                </span>
+                <span className="text-[11px] text-slate-500 font-medium">Interacting below automatically updates rule value</span>
+              </div>
+
+              {/* 1. BANK ACCOUNT WIDGET (Condition #13 requested by user) */}
+              {formData.field === 'bankAccount' && (
+                <div className="space-y-2">
+                  <label className="block text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                    <CreditCard className="w-4 h-4 text-gov-secondary" />
+                    <span>Select Eligible Bank / Account Requirement:</span>
+                  </label>
+                  <select
+                    value={formData.expectedValue}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        expectedValue: e.target.value,
+                        operator: '==',
+                        description: `Applicant must have an eligible account: ${e.target.value}.`,
+                      })
+                    }
+                    className="w-full text-xs rounded-xl border border-blue-300 p-3 bg-white font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-gov-secondary shadow-xs cursor-pointer"
+                  >
+                    {BANK_OPTIONS.map((bank, idx) => (
+                      <option key={idx} value={bank}>
+                        {bank}
+                      </option>
+                    ))}
+                  </select>
+                  <p className="text-[11px] text-slate-500">
+                    Choose one bank or DBT account requirement from the dropdown above.
+                  </p>
+                </div>
+              )}
+
+              {/* 2. DOCUMENTS & CERTIFICATES WIDGET (Condition #14 requested by user) */}
+              {formData.field === 'documents' && (
+                <div className="space-y-2.5">
+                  <label className="block text-xs font-bold text-slate-800 flex items-center justify-between">
+                    <span className="flex items-center gap-1.5">
+                      <FolderCheck className="w-4 h-4 text-gov-secondary" />
+                      <span>Select Required Documents & Certificates (Multiple Checklist):</span>
+                    </span>
+                    <span className="text-[11px] text-gov-secondary font-bold">
+                      {formData.expectedValue.split(',').filter(Boolean).length} Selected
+                    </span>
+                  </label>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5 max-h-60 overflow-y-auto p-3 bg-white rounded-xl border border-blue-200">
+                    {DOCUMENT_OPTIONS.map((doc, idx) => {
+                      const isChecked = formData.expectedValue.includes(doc);
+                      return (
+                        <label
+                          key={idx}
+                          className={`flex items-start gap-2 p-2.5 rounded-lg border text-xs cursor-pointer transition-colors ${
+                            isChecked
+                              ? 'bg-blue-50/70 border-gov-secondary text-gov-primary font-bold'
+                              : 'bg-white border-slate-200 hover:bg-slate-50 text-slate-700'
+                          }`}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={isChecked}
+                            onChange={() => handleToggleMultiItem(doc)}
+                            className="mt-0.5 rounded text-gov-secondary"
+                          />
+                          <span className="leading-tight">{doc}</span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                  <p className="text-[11px] text-slate-500">
+                    Check one, two, or multiple documents that the citizen must provide.
+                  </p>
+                </div>
+              )}
+
+              {/* 3. AGE RANGE WIDGET (Condition #1) */}
+              {formData.field === 'age' && (
+                <div className="space-y-3">
+                  <label className="block text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                    <Calendar className="w-4 h-4 text-gov-secondary" />
+                    <span>Set Eligible Age Range (Years):</span>
+                  </label>
+
+                  <div className="grid grid-cols-2 gap-4 max-w-md">
+                    <div>
+                      <span className="text-[11px] font-bold text-slate-600 block mb-1">Minimum Age:</span>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="number"
+                          min="0"
+                          max="120"
+                          value={getAgeValues().min}
+                          onChange={(e) => handleUpdateAge('min', e.target.value)}
+                          className="w-full text-xs font-bold p-2.5 rounded-lg border border-blue-300 bg-white"
+                        />
+                        <span className="text-xs text-slate-500 font-semibold">Years</span>
+                      </div>
+                    </div>
+
+                    <div>
+                      <span className="text-[11px] font-bold text-slate-600 block mb-1">Maximum Age:</span>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="number"
+                          min="0"
+                          max="120"
+                          value={getAgeValues().max}
+                          onChange={(e) => handleUpdateAge('max', e.target.value)}
+                          className="w-full text-xs font-bold p-2.5 rounded-lg border border-blue-300 bg-white"
+                        />
+                        <span className="text-xs text-slate-500 font-semibold">Years</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Age Presets */}
+                  <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                    <span className="text-[11px] font-semibold text-slate-500">Quick Age Presets:</span>
+                    {[
+                      { label: '18 – 60 (Working Age)', min: 18, max: 60 },
+                      { label: '18 – 35 (Youth / Skill)', min: 18, max: 35 },
+                      { label: '60+ (Senior Citizen)', min: 60, max: 100 },
+                      { label: '0 – 18 (Children)', min: 0, max: 18 },
+                    ].map((ap, idx) => (
+                      <button
+                        key={idx}
+                        type="button"
+                        onClick={() => {
+                          setFormData({
+                            ...formData,
+                            operator: 'BETWEEN',
+                            expectedValue: `${ap.min}, ${ap.max}`,
+                            description: `Applicant must be between ${ap.min} and ${ap.max} years of age.`,
+                          });
+                        }}
+                        className="px-2 py-0.5 rounded bg-white border border-blue-200 hover:border-gov-secondary text-[11px] font-semibold text-slate-700 cursor-pointer"
+                      >
+                        {ap.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* 4. ANNUAL FAMILY INCOME WIDGET (Condition #2) */}
+              {formData.field === 'annualFamilyIncome' && (
+                <div className="space-y-3">
+                  <label className="block text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                    <IndianRupee className="w-4 h-4 text-gov-secondary" />
+                    <span>Set Annual Family Income Ceiling:</span>
+                  </label>
+
+                  <div className="flex items-center gap-3 max-w-sm">
+                    <div className="relative w-full">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 font-bold text-slate-400 text-xs">₹</span>
+                      <input
+                        type="number"
+                        step="10000"
+                        value={formData.expectedValue}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            operator: '<=',
+                            expectedValue: e.target.value,
+                            description: `Annual family income must not exceed ₹${Number(e.target.value || 0).toLocaleString('en-IN')}.`,
+                          })
+                        }
+                        className="w-full pl-7 pr-3 py-2 text-xs font-bold rounded-lg border border-blue-300 bg-white"
+                        placeholder="250000"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Quick Income Buttons */}
+                  <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                    <span className="text-[11px] font-semibold text-slate-500">Quick Ceilings:</span>
+                    {[
+                      { label: '₹1.0 Lakh', val: '100000' },
+                      { label: '₹2.0 Lakh', val: '200000' },
+                      { label: '₹2.5 Lakh (Standard)', val: '250000' },
+                      { label: '₹3.0 Lakh', val: '300000' },
+                      { label: '₹5.0 Lakh', val: '500000' },
+                      { label: '₹8.0 Lakh (EWS Central)', val: '800000' },
+                    ].map((inc, idx) => (
+                      <button
+                        key={idx}
+                        type="button"
+                        onClick={() => {
+                          setFormData({
+                            ...formData,
+                            operator: '<=',
+                            expectedValue: inc.val,
+                            description: `Family income below ₹${(Number(inc.val) / 100000).toFixed(1)} lakh.`,
+                          });
+                        }}
+                        className={`px-2.5 py-1 rounded-md text-[11px] font-bold transition-colors cursor-pointer ${
+                          formData.expectedValue === inc.val
+                            ? 'bg-gov-secondary text-white'
+                            : 'bg-white border border-blue-200 text-slate-700 hover:border-gov-secondary'
+                        }`}
+                      >
+                        {inc.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* 5. GENDER WIDGET (Condition #4) */}
+              {formData.field === 'gender' && (
+                <div className="space-y-2">
+                  <label className="block text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                    <Users className="w-4 h-4 text-gov-secondary" />
+                    <span>Select Target Gender:</span>
+                  </label>
+                  <div className="flex flex-wrap gap-2">
+                    {[
+                      { label: 'Female / Women Only', val: 'Female', desc: 'Designated exclusively for female beneficiaries' },
+                      { label: 'Male / Men Only', val: 'Male', desc: 'Designated for male applicants' },
+                      { label: 'Transgender Persons', val: 'Transgender', desc: 'Designated for transgender beneficiaries' },
+                      { label: 'All Genders (Open)', val: 'All Genders', desc: 'Open to all genders' },
+                    ].map((g, idx) => (
+                      <button
+                        key={idx}
+                        type="button"
+                        onClick={() =>
+                          setFormData({
+                            ...formData,
+                            expectedValue: g.val,
+                            operator: g.val === 'All Genders' ? 'IN' : '==',
+                            description: g.desc,
+                          })
+                        }
+                        className={`px-3 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                          formData.expectedValue === g.val
+                            ? 'bg-gov-secondary text-white shadow-xs'
+                            : 'bg-white border border-blue-200 text-slate-700 hover:bg-slate-50'
+                        }`}
+                      >
+                        {g.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* 6. SOCIAL CATEGORY WIDGET (Condition #7) */}
+              {formData.field === 'community' && (
+                <div className="space-y-2">
+                  <label className="block text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                    <Users className="w-4 h-4 text-gov-secondary" />
+                    <span>Select Eligible Social Categories (Multi-Select Checklist):</span>
+                  </label>
+                  <div className="flex flex-wrap gap-2">
+                    {COMMUNITY_OPTIONS.map((comm, idx) => {
+                      const isSelected = formData.expectedValue.includes(comm);
+                      return (
+                        <button
+                          key={idx}
+                          type="button"
+                          onClick={() => handleToggleMultiItem(comm)}
+                          className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-all cursor-pointer flex items-center gap-1.5 ${
+                            isSelected
+                              ? 'bg-gov-secondary text-white border-gov-secondary shadow-xs'
+                              : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
+                          }`}
+                        >
+                          <input type="checkbox" checked={isSelected} readOnly className="rounded pointer-events-none" />
+                          <span>{comm}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <p className="text-[11px] text-slate-500">
+                    Applicant must belong to one of the selected categories.
+                  </p>
+                </div>
+              )}
+
+              {/* 7. RESIDENCE / STATE WIDGET (Condition #3) */}
+              {formData.field === 'state' && (
+                <div className="space-y-2">
+                  <label className="block text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                    <MapPin className="w-4 h-4 text-gov-secondary" />
+                    <span>Select Eligible State / Territory Residence:</span>
+                  </label>
+                  <select
+                    value={formData.expectedValue}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        expectedValue: e.target.value,
+                        operator: e.target.value.includes('All India') ? 'EXISTS' : '==',
+                        description: `Applicant must be a permanent resident of ${e.target.value}.`,
+                      })
+                    }
+                    className="w-full text-xs rounded-xl border border-blue-300 p-3 bg-white font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-gov-secondary shadow-xs cursor-pointer"
+                  >
+                    {INDIAN_STATES.map((st, idx) => (
+                      <option key={idx} value={st}>
+                        {st}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {/* 8. EDUCATION LEVEL WIDGET (Condition #5) */}
+              {formData.field === 'education' && (
+                <div className="space-y-2">
+                  <label className="block text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                    <GraduationCap className="w-4 h-4 text-gov-secondary" />
+                    <span>Select Minimum / Accepted Education Qualifications:</span>
+                  </label>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    {EDUCATION_OPTIONS.map((edu, idx) => {
+                      const isSelected = formData.expectedValue.includes(edu);
+                      return (
+                        <label
+                          key={idx}
+                          className={`flex items-center gap-2 p-2 rounded-lg border text-xs cursor-pointer transition-colors ${
+                            isSelected
+                              ? 'bg-blue-50/70 border-gov-secondary text-gov-primary font-bold'
+                              : 'bg-white border-slate-200 hover:bg-slate-50 text-slate-700'
+                          }`}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={isSelected}
+                            onChange={() => handleToggleMultiItem(edu)}
+                            className="rounded text-gov-secondary"
+                          />
+                          <span>{edu}</span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* 9. OCCUPATION WIDGET (Condition #6) */}
+              {formData.field === 'occupation' && (
+                <div className="space-y-2">
+                  <label className="block text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                    <Briefcase className="w-4 h-4 text-gov-secondary" />
+                    <span>Select Target Occupations:</span>
+                  </label>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
+                    {OCCUPATION_OPTIONS.map((occ, idx) => {
+                      const isSelected = formData.expectedValue.includes(occ);
+                      return (
+                        <label
+                          key={idx}
+                          className={`flex items-center gap-2 p-2 rounded-lg border text-xs cursor-pointer transition-colors ${
+                            isSelected
+                              ? 'bg-blue-50/70 border-gov-secondary text-gov-primary font-bold'
+                              : 'bg-white border-slate-200 hover:bg-slate-50 text-slate-700'
+                          }`}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={isSelected}
+                            onChange={() => handleToggleMultiItem(occ)}
+                            className="rounded text-gov-secondary"
+                          />
+                          <span className="truncate">{occ}</span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* 10. EMPLOYMENT STATUS WIDGET (Condition #8) */}
+              {formData.field === 'employmentStatus' && (
+                <div className="space-y-2">
+                  <label className="block text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                    <Briefcase className="w-4 h-4 text-gov-secondary" />
+                    <span>Select Required Employment Status:</span>
+                  </label>
+                  <div className="flex flex-wrap gap-2">
+                    {['Unemployed', 'Self-Employed', 'Daily Wage Worker', 'Employed (Salaried)', 'Student'].map(
+                      (emp, idx) => (
+                        <button
+                          key={idx}
+                          type="button"
+                          onClick={() =>
+                            setFormData({
+                              ...formData,
+                              expectedValue: emp,
+                              operator: '==',
+                              description: `Applicant must be currently ${emp.toLowerCase()}.`,
+                            })
+                          }
+                          className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
+                            formData.expectedValue === emp
+                              ? 'bg-gov-secondary text-white border-gov-secondary shadow-xs'
+                              : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
+                          }`}
+                        >
+                          {emp}
+                        </button>
+                      )
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* 11. DISABILITY STATUS WIDGET (Condition #9) */}
+              {formData.field === 'disabilityStatus' && (
+                <div className="space-y-2">
+                  <label className="block text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                    <ShieldAlert className="w-4 h-4 text-gov-secondary" />
+                    <span>Set Disability Condition:</span>
+                  </label>
+                  <div className="flex flex-wrap gap-2">
+                    {[
+                      { label: 'Must have Certified Benchmark Disability (>= 40% PwD)', val: 'true' },
+                      { label: 'Not Mandatory / Open to All Citizens', val: 'false' },
+                    ].map((d, idx) => (
+                      <button
+                        key={idx}
+                        type="button"
+                        onClick={() =>
+                          setFormData({
+                            ...formData,
+                            expectedValue: d.val,
+                            operator: '==',
+                            description: d.label,
+                          })
+                        }
+                        className={`px-3 py-2 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
+                          formData.expectedValue === d.val
+                            ? 'bg-gov-secondary text-white border-gov-secondary shadow-xs'
+                            : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
+                        }`}
+                      >
+                        {d.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* 12. LAND OWNERSHIP WIDGET (Condition #10) */}
+              {formData.field === 'landOwnership' && (
+                <div className="space-y-2">
+                  <label className="block text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                    <Layers className="w-4 h-4 text-gov-secondary" />
+                    <span>Select Agricultural Land Holding Category:</span>
+                  </label>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    {[
+                      'Cultivable Agricultural Landholder (PM-KISAN Standard)',
+                      'Marginal Farmer (Holding up to 1 Hectare / 2.5 Acres)',
+                      'Small Farmer (Holding 1 to 2 Hectares / 5 Acres)',
+                      'Landless Agricultural Tenant / Cultivator',
+                    ].map((land, idx) => (
+                      <button
+                        key={idx}
+                        type="button"
+                        onClick={() =>
+                          setFormData({
+                            ...formData,
+                            expectedValue: land,
+                            operator: '==',
+                            description: `Applicant must be: ${land}.`,
+                          })
+                        }
+                        className={`p-2.5 rounded-xl text-xs font-bold border text-left transition-all cursor-pointer ${
+                          formData.expectedValue === land
+                            ? 'bg-gov-secondary text-white border-gov-secondary shadow-xs'
+                            : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
+                        }`}
+                      >
+                        {land}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* 13. FAMILY STATUS WIDGET (Condition #11) */}
+              {formData.field === 'familyStatus' && (
+                <div className="space-y-2">
+                  <label className="block text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                    <Users className="w-4 h-4 text-gov-secondary" />
+                    <span>Select Recognized Household Status Categories:</span>
+                  </label>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    {FAMILY_STATUS_OPTIONS.map((fam, idx) => {
+                      const isSelected = formData.expectedValue.includes(fam);
+                      return (
+                        <label
+                          key={idx}
+                          className={`flex items-center gap-2 p-2.5 rounded-lg border text-xs cursor-pointer transition-colors ${
+                            isSelected
+                              ? 'bg-blue-50/70 border-gov-secondary text-gov-primary font-bold'
+                              : 'bg-white border-slate-200 hover:bg-slate-50 text-slate-700'
+                          }`}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={isSelected}
+                            onChange={() => handleToggleMultiItem(fam)}
+                            className="rounded text-gov-secondary"
+                          />
+                          <span>{fam}</span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* 14. EXISTING BENEFITS WIDGET (Condition #12) */}
+              {formData.field === 'existingBenefits' && (
+                <div className="space-y-2">
+                  <label className="block text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                    <ShieldAlert className="w-4 h-4 text-gov-secondary" />
+                    <span>Select Ineligibility / Benefit Exclusions (Must NOT have):</span>
+                  </label>
+                  <div className="space-y-2">
+                    {BENEFIT_EXCLUSION_OPTIONS.map((excl, idx) => {
+                      const isSelected = formData.expectedValue.includes(excl);
+                      return (
+                        <label
+                          key={idx}
+                          className={`flex items-center gap-2 p-2.5 rounded-lg border text-xs cursor-pointer transition-colors ${
+                            isSelected
+                              ? 'bg-rose-50/70 border-rose-400 text-rose-900 font-bold'
+                              : 'bg-white border-slate-200 hover:bg-slate-50 text-slate-700'
+                          }`}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={isSelected}
+                            onChange={() => handleToggleMultiItem(excl)}
+                            className="rounded text-rose-600"
+                          />
+                          <span>{excl}</span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* 15. LOCATION / REGIONAL DISTRICT WIDGET (Condition #15) */}
+              {formData.field === 'district' && (
+                <div className="space-y-2">
+                  <label className="block text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                    <MapPin className="w-4 h-4 text-gov-secondary" />
+                    <span>Select Eligible Regional Demarcation:</span>
+                  </label>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    {[
+                      'Rural Gram Panchayat Areas Only',
+                      'Urban Municipalities / Slum Clusters Only',
+                      'Notified NITI Aayog Aspirational Districts',
+                      'All Regional Districts (No Geographic Barrier)',
+                    ].map((loc, idx) => (
+                      <button
+                        key={idx}
+                        type="button"
+                        onClick={() =>
+                          setFormData({
+                            ...formData,
+                            expectedValue: loc,
+                            operator: 'EXISTS',
+                            description: `Scheme applies to: ${loc}.`,
+                          })
+                        }
+                        className={`p-2.5 rounded-xl text-xs font-bold border text-left transition-all cursor-pointer ${
+                          formData.expectedValue === loc
+                            ? 'bg-gov-secondary text-white border-gov-secondary shadow-xs'
+                            : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
+                        }`}
+                      >
+                        {loc}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
 
           <div>
             <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
@@ -760,7 +1526,7 @@ const AdminRulesPage = () => {
               rows={2}
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              placeholder="e.g. Applicant must be between 18 and 60 years old to be considered eligible."
+              placeholder="e.g. Beneficiary must satisfy the condition parameters configured above."
               className="w-full text-xs rounded-lg border border-gov-border p-2.5 bg-white focus:outline-none focus:ring-2 focus:ring-gov-secondary"
             />
           </div>
@@ -869,7 +1635,7 @@ const AdminRulesPage = () => {
                         {rule.field}
                       </span>
                       <span className="text-gov-secondary font-black">{rule.operator}</span>
-                      <span className="bg-blue-50 text-blue-900 px-2 py-0.5 rounded border border-blue-200 font-bold">
+                      <span className="bg-blue-50 text-blue-900 px-2 py-0.5 rounded border border-blue-200 font-bold max-w-xs truncate">
                         {JSON.stringify(rule.expectedValue)}
                       </span>
                     </div>
