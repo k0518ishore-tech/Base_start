@@ -78,7 +78,7 @@ const AdminDepartmentsPage = () => {
     if (!deptSchemesMap[dept._id]) {
       setLoadingDeptSchemes((prev) => ({ ...prev, [dept._id]: true }));
       try {
-        const res = await api.get(`/departments/${dept._id}/schemes?limit=50`);
+        const res = await api.get(`/departments/${dept._id}/schemes?limit=1000`);
         if (res.data.success) {
           setDeptSchemesMap((prev) => ({ ...prev, [dept._id]: res.data.data }));
         }

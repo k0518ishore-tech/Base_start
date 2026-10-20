@@ -484,7 +484,7 @@ const AdminRulesPage = () => {
   useEffect(() => {
     setIsLoadingSchemes(true);
     api
-      .get('/schemes?limit=100')
+      .get('/schemes?limit=2500')
       .then((res) => {
         if (res.data.success && res.data.data.length > 0) {
           setSchemes(res.data.data);

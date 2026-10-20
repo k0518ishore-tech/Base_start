@@ -71,7 +71,7 @@ const AdminSchemesPage = () => {
     setIsLoading(true);
     try {
       const [schemesRes, deptsRes] = await Promise.all([
-        api.get('/schemes', { params: { search, includeInactive: 'true', limit: 100 } }),
+        api.get('/schemes', { params: { search, includeInactive: 'true', limit: 2500 } }),
         api.get('/departments?includeInactive=true'),
       ]);
 
