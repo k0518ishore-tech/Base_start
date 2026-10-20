@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import {
   Sliders,
   Plus,
@@ -45,6 +46,9 @@ const OPERATORS = [
 ];
 
 const AdminRulesPage = () => {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const querySchemeId = searchParams.get('schemeId');
+
   const [schemes, setSchemes] = useState([]);
   const [selectedSchemeId, setSelectedSchemeId] = useState('');
   const [rules, setRules] = useState([]);
@@ -72,11 +76,12 @@ const AdminRulesPage = () => {
       .then((res) => {
         if (res.data.success && res.data.data.length > 0) {
           setSchemes(res.data.data);
-          setSelectedSchemeId(res.data.data[0]._id);
+          const matched = querySchemeId && res.data.data.find((s) => s._id === querySchemeId);
+          setSelectedSchemeId(matched ? matched._id : res.data.data[0]._id);
         }
       })
       .catch((err) => console.error(err));
-  }, []);
+  }, [querySchemeId]);
 
   const fetchRules = async (schemeId) => {
     if (!schemeId) return;
@@ -223,7 +228,10 @@ const AdminRulesPage = () => {
         </label>
         <select
           value={selectedSchemeId}
-          onChange={(e) => setSelectedSchemeId(e.target.value)}
+          onChange={(e) => {
+            setSelectedSchemeId(e.target.value);
+            setSearchParams({ schemeId: e.target.value });
+          }}
           className="w-full text-xs rounded-lg border border-gov-border p-2 bg-slate-50 font-medium focus:outline-none focus:ring-2 focus:ring-gov-secondary"
         >
           {schemes.map((s) => (
