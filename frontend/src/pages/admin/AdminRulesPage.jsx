@@ -40,7 +40,7 @@ import EmptyState from '../../components/common/EmptyState';
 import { useToast } from '../../context/ToastContext';
 import api from '../../services/api';
 
-// 15 Profile & Criteria Fields
+// 15 Profile & Criteria Fields (For Custom Blank Rule creation)
 const RULE_FIELDS = [
   { value: 'age', label: '1. Age (Years computed from DOB)' },
   { value: 'annualFamilyIncome', label: '2. Annual Family Income (₹ Number)' },
@@ -98,31 +98,29 @@ const DOCUMENT_OPTIONS = [
   'Income Certificate from Tehsildar / Competent Authority',
   'Caste / Community Certificate (SC/ST/OBC/EWS)',
   'Land Revenue Records (RoR / 7-12 / Khasra-Khatauni / Patta)',
-  'Active Bank Passbook (with IFSC and Account No.)',
-  'Ration Card (BPL / AAY / Antyodaya / PHH)',
-  'Domicile / Permanent Residence Certificate',
-  'Disability Certificate / Unique Disability ID (UDID)',
-  'Age / Date of Birth Certificate',
-  'Educational Marksheet / Degree Certificate',
-  'Self-Declaration Affidavit of Unemployment',
-  'Farmer Registration / PM-KISAN ID Card',
-  'MGNREGA Job Card',
+  'Ration Card (BPL / Antyodaya / Priority Household)',
+  'Active Bank Account Passbook / Cancelled Cheque',
+  'Disability Certificate from Medical Board (>= 40% PwD)',
+  'Domicile / Residence Certificate of State',
+  'Class 10 / 12 Educational Marks Sheet',
+  'Farmer Identity Card / PM-KISAN Registration Card',
+  'E-Shram Card / Registered Unorganized Worker ID',
+  'Street Vendor Identity Card / Vending Certificate',
+  'Passport Size Photographs & Self Declaration',
 ];
 
-// States List for Condition #3
+// Indian States and UTs for Condition #3
 const INDIAN_STATES = [
-  'All India (Central / Nationwide Scheme)',
+  'All India (Any Indian State / UT)',
   'Andhra Pradesh',
   'Arunachal Pradesh',
   'Assam',
   'Bihar',
   'Chhattisgarh',
-  'Delhi (NCT)',
   'Goa',
   'Gujarat',
   'Haryana',
   'Himachal Pradesh',
-  'Jammu and Kashmir',
   'Jharkhand',
   'Karnataka',
   'Kerala',
@@ -142,58 +140,62 @@ const INDIAN_STATES = [
   'Uttar Pradesh',
   'Uttarakhand',
   'West Bengal',
-];
-
-// Education Levels for Condition #5
-const EDUCATION_OPTIONS = [
-  'No Formal Education Barrier',
-  'Primary School (Class 5 Passed)',
-  'Middle School (Class 8 Passed)',
-  'Class 10 (Secondary School Passed)',
-  'Class 12 (Higher Secondary / Intermediate)',
-  'ITI / Polytechnic Diploma',
-  'Graduate (Bachelor Degree - BA, BSc, BCom, BTech)',
-  'Post Graduate (Master Degree / PhD)',
-];
-
-// Occupations for Condition #6
-const OCCUPATION_OPTIONS = [
-  'Farmer / Agricultural Cultivator',
-  'Agricultural Wage Laborer',
-  'Street Vendor / Hawker',
-  'Artisan / Handloom Weaver',
-  'Construction / Unorganized Worker',
-  'Student / Scholar',
-  'Self-Employed Micro-Entrepreneur',
-  'Fisherman / Marine Worker',
-  'Healthcare / ASHA / Anganwadi Worker',
-  'Sanitation / Municipal Worker',
-  'Unemployed Citizen',
+  'Andaman and Nicobar Islands',
+  'Chandigarh',
+  'Dadra and Nagar Haveli and Daman and Diu',
+  'Delhi (NCT)',
+  'Jammu and Kashmir',
+  'Ladakh',
+  'Lakshadweep',
+  'Puducherry',
 ];
 
 // Social Categories for Condition #7
-const COMMUNITY_OPTIONS = ['SC', 'ST', 'OBC', 'EWS', 'General', 'Notified Minority'];
+const COMMUNITY_OPTIONS = ['SC', 'ST', 'OBC', 'EWS', 'General', 'Minority Community'];
 
-// Family Household Status for Condition #11
-const FAMILY_STATUS_OPTIONS = [
-  'Antyodaya Anna Yojana (AAY - Poorest of Poor)',
-  'Below Poverty Line (BPL Ration Card)',
-  'Priority Household (PHH Ration Card)',
-  'Female-Headed Single Parent Household',
-  'Destitute / Homeless Household',
+// Education Options for Condition #5
+const EDUCATION_OPTIONS = [
+  'Class 5 Passed',
+  'Class 8 Passed',
+  'Class 10 (Secondary School Examination)',
+  'Class 12 (Higher Secondary / Intermediate)',
+  'Diploma / ITI Certification',
+  "Graduate (Bachelor's Degree)",
+  "Post Graduate / Master's Degree / Doctorate",
 ];
 
-// Existing Benefits Exclusions for Condition #12
+// Occupation Options for Condition #6
+const OCCUPATION_OPTIONS = [
+  'Small / Marginal Farmer',
+  'Agricultural Laborer',
+  'Artisan / Traditional Craftsman / Weaver',
+  'Street Vendor / Small Urban Hawker',
+  'Construction / Daily Wage Laborer',
+  'Gig & Platform Worker',
+  'Self-Employed Micro-Entrepreneur',
+  'Unemployed Youth / Jobseeker',
+  'Homemaker / Domestic Caregiver',
+];
+
+// Family Status Options for Condition #11
+const FAMILY_STATUS_OPTIONS = [
+  'Antyodaya Anna Yojana (AAY - Poorest of Poor)',
+  'Below Poverty Line (BPL Card Holder)',
+  'Priority Household (PHH)',
+  'Female-Headed Household (Single Mother / Widow)',
+  'Senior Citizen Headed Household (No Earning Adult)',
+];
+
+// Existing Benefits Exclusion Options for Condition #12
 const BENEFIT_EXCLUSION_OPTIONS = [
-  'Must not receive Central / State Old Age or Widow Pension',
-  'Must not be an active Income Tax Payee',
-  'Must not be a Regular Government or PSU Employee',
-  'Must not receive PM-KISAN or duplicate DBT benefits',
-  'Must not own motorized commercial agricultural equipment',
+  'Central / State Civil Pension Beneficiaries (Exclusion)',
+  'Institutional Landholder / Income Tax Payee (Exclusion)',
+  'Existing DBT Housing Subsidy Beneficiary (PMAY Excluded)',
+  'Existing Higher Education DBT Scholarship Beneficiary',
 ];
 
 // The 15 Standard Common Eligibility Conditions
-export const COMMON_ELIGIBILITY_CONDITIONS = [
+const COMMON_ELIGIBILITY_CONDITIONS = [
   {
     id: 'TEMPLATE_AGE',
     number: 1,
@@ -208,12 +210,12 @@ export const COMMON_ELIGIBILITY_CONDITIONS = [
   {
     id: 'TEMPLATE_INCOME',
     number: 2,
-    name: 'Annual Income',
+    name: 'Annual income',
     example: 'Family income below ₹2.5 lakh',
     field: 'annualFamilyIncome',
     operator: '<=',
     expectedValue: '250000',
-    description: 'Annual family income must be below ₹2,50,000.',
+    description: 'Family income must not exceed ₹2.5 lakh per annum.',
     isMandatory: true,
   },
   {
@@ -222,9 +224,9 @@ export const COMMON_ELIGIBILITY_CONDITIONS = [
     name: 'Residence',
     example: 'Must be an Indian citizen or resident of a particular state',
     field: 'state',
-    operator: 'IN',
-    expectedValue: 'All India (Central / Nationwide Scheme)',
-    description: 'Applicant must be a resident of the specified State / Territory.',
+    operator: '==',
+    expectedValue: 'All India (Any Indian State / UT)',
+    description: 'Must be an Indian citizen or resident of the specified state.',
     isMandatory: true,
   },
   {
@@ -235,7 +237,7 @@ export const COMMON_ELIGIBILITY_CONDITIONS = [
     field: 'gender',
     operator: '==',
     expectedValue: 'Female',
-    description: 'Welfare initiative designated specifically for women beneficiaries.',
+    description: 'Only female / women applicants are eligible for this scheme.',
     isMandatory: true,
   },
   {
@@ -245,8 +247,8 @@ export const COMMON_ELIGIBILITY_CONDITIONS = [
     example: 'Must have completed Class 10',
     field: 'education',
     operator: 'IN',
-    expectedValue: 'Class 10 (Secondary School Passed)',
-    description: 'Applicant must have completed at least Class 10 secondary qualification.',
+    expectedValue: 'Class 10 (Secondary School Examination)',
+    description: 'Must have completed Class 10 or higher specified education level.',
     isMandatory: true,
   },
   {
@@ -256,85 +258,85 @@ export const COMMON_ELIGIBILITY_CONDITIONS = [
     example: 'Must be a farmer or registered worker',
     field: 'occupation',
     operator: 'IN',
-    expectedValue: 'Farmer / Agricultural Cultivator',
-    description: 'Applicant primary occupation must be a farmer or registered wage worker.',
+    expectedValue: 'Small / Marginal Farmer',
+    description: 'Must be a farmer, registered unorganized worker, or artisan.',
     isMandatory: true,
   },
   {
     id: 'TEMPLATE_COMMUNITY',
     number: 7,
-    name: 'Social Category',
+    name: 'Social category',
     example: 'SC/ST/OBC or other specified categories',
     field: 'community',
     operator: 'IN',
-    expectedValue: 'SC, ST, OBC, EWS',
-    description: 'Applicant must belong to an eligible affirmative category (SC/ST/OBC/EWS).',
+    expectedValue: 'SC, ST, OBC',
+    description: 'Applicant must belong to SC, ST, OBC, or specified category.',
     isMandatory: true,
   },
   {
     id: 'TEMPLATE_EMPLOYMENT',
     number: 8,
-    name: 'Employment Status',
+    name: 'Employment status',
     example: 'Must be unemployed',
     field: 'employmentStatus',
     operator: '==',
     expectedValue: 'Unemployed',
-    description: 'Applicant must be currently unemployed or an active jobseeker.',
+    description: 'Applicant must be currently unemployed or seeking self-employment.',
     isMandatory: true,
   },
   {
     id: 'TEMPLATE_DISABILITY',
     number: 9,
-    name: 'Disability Status',
+    name: 'Disability status',
     example: 'Must have a specified disability percentage',
     field: 'disabilityStatus',
     operator: '==',
     expectedValue: 'true',
-    description: 'Applicant must possess a certified benchmark disability percentage (>= 40%).',
-    isMandatory: false,
+    description: 'Must possess a valid disability certificate with benchmark disability (>= 40%).',
+    isMandatory: true,
   },
   {
     id: 'TEMPLATE_LAND',
     number: 10,
-    name: 'Land Ownership',
+    name: 'Land ownership',
     example: 'Must own or cultivate agricultural land',
     field: 'landOwnership',
     operator: '==',
-    expectedValue: 'Cultivable Agricultural Landholder',
-    description: 'Beneficiary must hold cultivable land ownership records or cultivate farm holdings.',
+    expectedValue: 'Cultivable Agricultural Landholder (PM-KISAN Standard)',
+    description: 'Must own or cultivate agricultural land up to specified landholding limit.',
     isMandatory: true,
   },
   {
     id: 'TEMPLATE_FAMILY',
     number: 11,
-    name: 'Family Status',
+    name: 'Family status',
     example: 'Must belong to a specified household category',
     field: 'familyStatus',
     operator: 'IN',
-    expectedValue: 'Below Poverty Line (BPL Ration Card)',
-    description: 'Household must belong to a recognized BPL or Antyodaya ration card category.',
+    expectedValue: 'Antyodaya Anna Yojana (AAY - Poorest of Poor)',
+    description: 'Must belong to BPL, Antyodaya, or designated household category.',
     isMandatory: true,
   },
   {
-    id: 'TEMPLATE_EXISTING_BENEFITS',
+    id: 'TEMPLATE_BENEFITS',
     number: 12,
-    name: 'Existing Benefits',
+    name: 'Existing benefits',
     example: 'Must not already receive certain overlapping benefits',
     field: 'existingBenefits',
-    operator: '!=',
-    expectedValue: 'Must not receive Central / State Old Age or Widow Pension',
-    description: 'Applicant must not already receive overlapping welfare pension or identical subsidy.',
+    operator: 'NOT_IN',
+    expectedValue: 'Central / State Civil Pension Beneficiaries',
+    description: 'Must not currently receive conflicting overlapping government DBT pensions.',
     isMandatory: true,
   },
   {
     id: 'TEMPLATE_BANK',
     number: 13,
-    name: 'Bank Account',
+    name: 'Bank account',
     example: 'Must have an eligible bank account',
     field: 'bankAccount',
     operator: '==',
     expectedValue: 'Any Scheduled Commercial Bank (Aadhaar Seeded & DBT Active)',
-    description: 'Applicant must have an active savings bank account linked to Aadhaar for DBT transfer.',
+    description: 'Must have an active, Aadhaar-seeded bank account enabled for DBT transfers.',
     isMandatory: true,
   },
   {
@@ -361,6 +363,95 @@ export const COMMON_ELIGIBILITY_CONDITIONS = [
   },
 ];
 
+const KNOWN_CONDITION_FIELDS = [
+  'bankAccount',
+  'documents',
+  'age',
+  'annualFamilyIncome',
+  'gender',
+  'community',
+  'state',
+  'education',
+  'occupation',
+  'employmentStatus',
+  'disabilityStatus',
+  'landOwnership',
+  'familyStatus',
+  'existingBenefits',
+  'district',
+];
+
+// Helper to generate clear, human-readable summary without code operators
+const getHumanFriendlySummary = (data) => {
+  if (!data.expectedValue && data.expectedValue !== 0) return 'No condition value specified yet.';
+
+  switch (data.field) {
+    case 'gender':
+      if (data.expectedValue === 'All Genders') return 'Open to all genders (Female, Male, Transgender)';
+      return `Restricted to ${data.expectedValue} applicants only`;
+    case 'bankAccount':
+      return `Must have an active account in ${data.expectedValue}`;
+    case 'documents': {
+      const docs = String(data.expectedValue).split(',').map((s) => s.trim()).filter(Boolean);
+      return docs.length > 0
+        ? `Citizen must provide ${docs.length} required document(s): ${docs.join(' + ')}`
+        : 'Please select required certificates from the checklist';
+    }
+    case 'age': {
+      const parts = String(data.expectedValue).split(',').map((s) => s.trim());
+      return `Applicant age must be between ${parts[0] || '18'} and ${parts[1] || '60'} years old`;
+    }
+    case 'annualFamilyIncome':
+      return `Family annual income ceiling: Up to ₹${Number(data.expectedValue || 0).toLocaleString('en-IN')} per year`;
+    case 'community': {
+      const comms = String(data.expectedValue).split(',').map((s) => s.trim()).filter(Boolean);
+      return comms.length > 0
+        ? `Applicant must belong to: ${comms.join(', ')}`
+        : 'Please select eligible social categories';
+    }
+    case 'state':
+      return String(data.expectedValue).includes('All India')
+        ? 'Open to residents of all Indian States & Union Territories'
+        : `Applicant must be a permanent resident of ${data.expectedValue}`;
+    case 'education': {
+      const edus = String(data.expectedValue).split(',').map((s) => s.trim()).filter(Boolean);
+      return edus.length > 0
+        ? `Accepted education qualifications: ${edus.join(', ')}`
+        : 'Please select eligible education qualifications';
+    }
+    case 'occupation': {
+      const occs = String(data.expectedValue).split(',').map((s) => s.trim()).filter(Boolean);
+      return occs.length > 0
+        ? `Target occupation: ${occs.join(', ')}`
+        : 'Please select target occupations';
+    }
+    case 'employmentStatus':
+      return `Applicant must be currently ${data.expectedValue}`;
+    case 'disabilityStatus':
+      return data.expectedValue === 'true' || data.expectedValue === true
+        ? 'Applicant must have a certified benchmark disability (≥ 40% PwD)'
+        : 'Disability certificate not required (open to all citizens)';
+    case 'landOwnership':
+      return `Landholding criterion: ${data.expectedValue}`;
+    case 'familyStatus': {
+      const fams = String(data.expectedValue).split(',').map((s) => s.trim()).filter(Boolean);
+      return fams.length > 0
+        ? `Household category: ${fams.join(', ')}`
+        : 'Please select household categories';
+    }
+    case 'existingBenefits': {
+      const excl = String(data.expectedValue).split(',').map((s) => s.trim()).filter(Boolean);
+      return excl.length > 0
+        ? `Disqualifying overlapping benefits: ${excl.join(', ')}`
+        : 'No overlapping benefit disqualifications set';
+    }
+    case 'district':
+      return `Geographic demarcation: ${data.expectedValue}`;
+    default:
+      return `${data.field}: ${data.expectedValue}`;
+  }
+};
+
 const AdminRulesPage = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const querySchemeId = searchParams.get('schemeId');
@@ -377,7 +468,6 @@ const AdminRulesPage = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [showConditionsGuide, setShowConditionsGuide] = useState(false);
-  const [showRawValueInput, setShowRawValueInput] = useState(false);
 
   // Form State
   const [formData, setFormData] = useState({
@@ -454,7 +544,10 @@ const AdminRulesPage = () => {
     // Case 1: Selected an existing saved rule
     const existingRule = currentRules.find((r) => r._id === optionId);
     if (existingRule) {
-      setActiveTemplateInfo(null);
+      const matchedTemplate = COMMON_ELIGIBILITY_CONDITIONS.find(
+        (c) => c.field === existingRule.field
+      );
+      setActiveTemplateInfo(matchedTemplate || null);
       let valStr = existingRule.expectedValue;
       if (Array.isArray(valStr)) valStr = valStr.join(', ');
       else if (typeof valStr === 'object') valStr = JSON.stringify(valStr);
@@ -560,7 +653,7 @@ const AdminRulesPage = () => {
       } else if (formData.operator === 'BETWEEN') {
         parsedVal = formData.expectedValue.split(',').map(Number);
       } else if (formData.field === 'disabilityStatus') {
-        parsedVal = formData.expectedValue === 'true' || formData.expectedValue === '1';
+        parsedVal = formData.expectedValue === 'true' || formData.expectedValue === '1' || formData.expectedValue === true;
       }
 
       const payload = {
@@ -615,9 +708,8 @@ const AdminRulesPage = () => {
 
   const selectedScheme = schemes.find((s) => s._id === selectedSchemeId);
   const isExistingDbRule = rules.some((r) => r._id === selectedRuleId);
-
-  // Live preview string
-  const previewText = `Condition: Citizen's ${formData.field} must satisfy [ ${formData.operator} ${formData.expectedValue} ]`;
+  const isCustomNew = selectedRuleId === 'CUSTOM_NEW';
+  const isTailoredCondition = KNOWN_CONDITION_FIELDS.includes(formData.field) && !isCustomNew;
 
   return (
     <div className="space-y-6">
@@ -636,7 +728,7 @@ const AdminRulesPage = () => {
             Eligibility Rule Builder
           </h1>
           <p className="text-xs text-slate-600 mt-0.5">
-            Select a scheme, pick from the <strong>15 common eligibility condition templates</strong>, and customize condition parameters using tailored form controls (bank dropdowns, certificate checklists, age ranges, etc.).
+            Select a scheme, pick from the <strong>15 common eligibility conditions</strong>, and configure parameters using dedicated controls (e.g. gender selector, bank dropdown, certificate checklists). No equality operators or code needed.
           </p>
         </div>
 
@@ -650,71 +742,68 @@ const AdminRulesPage = () => {
             <span>{showConditionsGuide ? 'Hide' : 'View'} 15 Conditions Reference</span>
           </button>
 
-          {selectedScheme && (
+          {selectedSchemeId && (
             <Link
-              to={`/schemes/${selectedScheme._id}`}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-colors"
+              to={`/schemes/${selectedSchemeId}`}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-bold transition-colors"
             >
-              <Eye className="w-3.5 h-3.5" />
-              <span>Show Scheme Page</span>
+              <FileText className="w-3.5 h-3.5" />
+              <span>Public Scheme Page</span>
             </Link>
           )}
         </div>
       </div>
 
-      {/* 15 COMMON CONDITIONS REFERENCE TABLE (Collapsible) */}
+      {/* 15 Conditions Reference Modal / Drawer */}
       {showConditionsGuide && (
-        <div className="bg-white rounded-2xl border border-blue-200 p-5 shadow-sm space-y-3 animate-fade-in">
-          <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+        <div className="bg-white rounded-2xl border border-blue-200 shadow-md p-5 space-y-4 transition-all">
+          <div className="flex items-center justify-between border-b border-blue-100 pb-3">
             <div className="flex items-center gap-2">
-              <Info className="w-4 h-4 text-gov-secondary" />
-              <h3 className="font-bold text-sm text-gov-primary">
-                Common Eligibility Conditions Reference Guide
+              <span className="p-1 rounded bg-blue-100 text-gov-secondary">
+                <BookOpen className="w-4 h-4" />
+              </span>
+              <h3 className="text-sm font-bold text-slate-900">
+                Common Eligibility Conditions Reference (Official Guidelines)
               </h3>
             </div>
-            <span className="text-xs text-slate-500">Click any condition to immediately configure it in Dropdown 2</span>
+            <button
+              onClick={() => setShowConditionsGuide(false)}
+              className="text-xs font-bold text-slate-500 hover:text-slate-800 cursor-pointer"
+            >
+              ✕ Close
+            </button>
           </div>
 
-          <div className="overflow-x-auto max-h-72 overflow-y-auto">
-            <table className="w-full text-left text-xs text-slate-700">
-              <thead className="bg-slate-50 text-slate-600 font-bold sticky top-0 border-b border-slate-200">
-                <tr>
-                  <th className="px-3 py-2 w-12">No.</th>
-                  <th className="px-3 py-2 w-44">Eligibility Condition</th>
-                  <th className="px-3 py-2">Standard Example</th>
-                  <th className="px-3 py-2 w-28 text-right">Action</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {COMMON_ELIGIBILITY_CONDITIONS.map((cond) => (
-                  <tr key={cond.id} className="hover:bg-blue-50/50 transition-colors">
-                    <td className="px-3 py-2 font-bold text-slate-500">{cond.number}</td>
-                    <td className="px-3 py-2 font-bold text-slate-900">{cond.name}</td>
-                    <td className="px-3 py-2 text-slate-600">{cond.example}</td>
-                    <td className="px-3 py-2 text-right">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          handleSelectOption(cond.id);
-                          setShowConditionsGuide(false);
-                          showToast(`Loaded ${cond.name} into Rule Editor`, 'info');
-                        }}
-                        className="px-2.5 py-1 rounded bg-blue-50 hover:bg-gov-secondary hover:text-white text-gov-secondary font-bold text-[11px] transition-colors cursor-pointer"
-                      >
-                        Apply Rule &rarr;
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 max-h-96 overflow-y-auto pr-1">
+            {COMMON_ELIGIBILITY_CONDITIONS.map((cond) => (
+              <div
+                key={cond.id}
+                onClick={() => {
+                  handleSelectOption(cond.id);
+                  setShowConditionsGuide(false);
+                }}
+                className="p-3 rounded-xl border border-slate-200 bg-slate-50/50 hover:bg-blue-50 hover:border-gov-secondary transition-all cursor-pointer space-y-1"
+              >
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-extrabold text-gov-primary">
+                    #{cond.number}. {cond.name}
+                  </span>
+                  <span className="text-[10px] font-bold text-gov-secondary bg-white px-2 py-0.5 rounded-full border border-blue-200">
+                    Apply
+                  </span>
+                </div>
+                <p className="text-[11px] text-slate-600 font-medium">
+                  {cond.example}
+                </p>
+              </div>
+            ))}
           </div>
         </div>
       )}
 
-      {/* DUAL DROPDOWN SELECTOR BAR */}
-      <div className="bg-white rounded-2xl border border-gov-border p-5 shadow-subtle space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+      {/* TOP SELECTION CONTROL DESK (Dual-Dropdown Architecture) */}
+      <div className="bg-white rounded-2xl border border-gov-border shadow-subtle p-5 space-y-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* Dropdown 1: Target Scheme */}
           <div className="space-y-1.5">
             <label className="text-xs font-bold text-gov-primary uppercase tracking-wider flex items-center justify-between">
@@ -722,8 +811,8 @@ const AdminRulesPage = () => {
                 <Building2 className="w-4 h-4 text-gov-secondary" />
                 <span>1. Select Scheme:</span>
               </span>
-              <span className="text-[11px] text-slate-400 font-semibold normal-case">
-                {schemes.length} schemes available
+              <span className="text-[11px] text-slate-500 font-semibold normal-case">
+                {schemes.length} total schemes
               </span>
             </label>
 
@@ -736,11 +825,11 @@ const AdminRulesPage = () => {
                   setSelectedSchemeId(e.target.value);
                   setSearchParams({ schemeId: e.target.value });
                 }}
-                className="w-full text-xs rounded-xl border border-gov-border p-3 bg-slate-50 font-bold focus:bg-white focus:outline-none focus:ring-2 focus:ring-gov-secondary text-slate-900 shadow-xs cursor-pointer"
+                className="w-full text-xs rounded-xl border border-gov-border p-3 bg-white font-bold focus:outline-none focus:ring-2 focus:ring-gov-secondary text-slate-900 shadow-xs cursor-pointer"
               >
                 {schemes.map((s) => (
                   <option key={s._id} value={s._id}>
-                    {s.schemeName} ({s.category})
+                    {s.schemeName} ({s.department?.departmentName || 'General Dept'})
                   </option>
                 ))}
               </select>
@@ -772,7 +861,7 @@ const AdminRulesPage = () => {
                   <optgroup label={`✅ Currently Configured Scheme Rules (${rules.length})`}>
                     {rules.map((r) => (
                       <option key={r._id} value={r._id}>
-                        {r.ruleName} — [{r.field} {r.operator} {JSON.stringify(r.expectedValue)}] {r.isMandatory ? '★ Mandatory' : '(Advisory)'}
+                        {r.ruleName} — [{r.field}] {r.isMandatory ? '★ Mandatory' : '(Advisory)'}
                       </option>
                     ))}
                   </optgroup>
@@ -814,15 +903,6 @@ const AdminRulesPage = () => {
               </span>
             )}
           </div>
-
-          <button
-            type="button"
-            onClick={() => setShowRawValueInput(!showRawValueInput)}
-            className="text-[11px] font-semibold text-gov-secondary hover:underline flex items-center gap-1 cursor-pointer"
-          >
-            <Settings2 className="w-3 h-3" />
-            <span>{showRawValueInput ? 'Use Tailored UI Controls' : 'Use Raw Text Value Input'}</span>
-          </button>
         </div>
       </div>
 
@@ -878,63 +958,33 @@ const AdminRulesPage = () => {
 
         {/* Editor Form */}
         <form onSubmit={handleSaveRule} className="p-6 space-y-6">
-          {/* Top metadata row */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="md:col-span-3">
-              <Input
-                label="Rule Name / Public Condition Title"
-                value={formData.ruleName}
-                onChange={(e) => setFormData({ ...formData, ruleName: e.target.value })}
-                placeholder="e.g. Age Limit (Applicant must be 18–60 years old)"
-                required
-              />
-            </div>
-
-            <Select
-              label="Citizen Profile Field"
-              value={formData.field}
-              onChange={(e) => setFormData({ ...formData, field: e.target.value })}
-              options={RULE_FIELDS}
+          {/* Rule Title Input */}
+          <div className="w-full">
+            <Input
+              label="Rule Name / Public Condition Title"
+              value={formData.ruleName}
+              onChange={(e) => setFormData({ ...formData, ruleName: e.target.value })}
+              placeholder="e.g. Gender Requirement (Only women are eligible)"
               required
             />
-
-            <Select
-              label="Evaluation Operator"
-              value={formData.operator}
-              onChange={(e) => setFormData({ ...formData, operator: e.target.value })}
-              options={OPERATORS}
-              required
-            />
-
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
-                Raw Value Output <span className="text-gov-error">*</span>
-              </label>
-              <input
-                type="text"
-                value={formData.expectedValue}
-                onChange={(e) => setFormData({ ...formData, expectedValue: e.target.value })}
-                placeholder="e.g. 18, 60 or 250000 or Female"
-                className="w-full text-xs rounded-lg border border-gov-border p-2 focus:outline-none focus:ring-2 focus:ring-gov-secondary font-mono bg-slate-50 font-bold"
-                required
-              />
-            </div>
           </div>
 
-          {/* DYNAMIC FIELD CONTROL WIDGET (Changes specifically based on selected rule) */}
-          {!showRawValueInput && (
-            <div className="p-5 rounded-2xl border border-blue-200 bg-blue-50/40 space-y-3">
-              <div className="flex items-center justify-between border-b border-blue-100 pb-2">
+          {/* TAILORED CONDITION WIDGET SECTION */}
+          {isTailoredCondition ? (
+            <div className="p-5 rounded-2xl border border-blue-200 bg-blue-50/40 space-y-4">
+              <div className="flex items-center justify-between border-b border-blue-100 pb-2.5">
                 <span className="text-xs font-bold text-gov-primary uppercase tracking-wider flex items-center gap-1.5">
                   <Sparkles className="w-4 h-4 text-gov-secondary" />
-                  <span>Tailored Input Controls for "{formData.field}":</span>
+                  <span>Rule Criteria Settings for "{activeTemplateInfo ? activeTemplateInfo.name : formData.field}":</span>
                 </span>
-                <span className="text-[11px] text-slate-500 font-medium">Interacting below automatically updates rule value</span>
+                <span className="text-[11px] text-slate-500 font-medium">
+                  Select criteria below. Operators and parameters apply automatically.
+                </span>
               </div>
 
-              {/* 1. BANK ACCOUNT WIDGET (Condition #13 requested by user) */}
+              {/* 1. BANK ACCOUNT WIDGET (Condition #13) */}
               {formData.field === 'bankAccount' && (
-                <div className="space-y-2">
+                <div className="space-y-2.5">
                   <label className="block text-xs font-bold text-slate-800 flex items-center gap-1.5">
                     <CreditCard className="w-4 h-4 text-gov-secondary" />
                     <span>Select Eligible Bank / Account Requirement:</span>
@@ -963,18 +1013,18 @@ const AdminRulesPage = () => {
                 </div>
               )}
 
-              {/* 2. DOCUMENTS & CERTIFICATES WIDGET (Condition #14 requested by user) */}
+              {/* 2. DOCUMENTS & CERTIFICATES WIDGET (Condition #14) */}
               {formData.field === 'documents' && (
                 <div className="space-y-2.5">
-                  <label className="block text-xs font-bold text-slate-800 flex items-center justify-between">
-                    <span className="flex items-center gap-1.5">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
                       <FolderCheck className="w-4 h-4 text-gov-secondary" />
-                      <span>Select Required Documents & Certificates (Multiple Checklist):</span>
-                    </span>
-                    <span className="text-[11px] text-gov-secondary font-bold">
+                      <span>Select Required Documents & Certificates:</span>
+                    </label>
+                    <span className="text-[11px] font-bold text-gov-secondary bg-blue-50 px-2 py-0.5 rounded-full border border-blue-200">
                       {formData.expectedValue.split(',').filter(Boolean).length} Selected
                     </span>
-                  </label>
+                  </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5 max-h-60 overflow-y-auto p-3 bg-white rounded-xl border border-blue-200">
                     {DOCUMENT_OPTIONS.map((doc, idx) => {
@@ -1000,7 +1050,7 @@ const AdminRulesPage = () => {
                     })}
                   </div>
                   <p className="text-[11px] text-slate-500">
-                    Check one, two, or multiple documents that the citizen must provide.
+                    Check one, two, or multiple certificates that the citizen must provide.
                   </p>
                 </div>
               )}
@@ -1065,7 +1115,7 @@ const AdminRulesPage = () => {
                             description: `Applicant must be between ${ap.min} and ${ap.max} years of age.`,
                           });
                         }}
-                        className="px-2 py-0.5 rounded bg-white border border-blue-200 hover:border-gov-secondary text-[11px] font-semibold text-slate-700 cursor-pointer"
+                        className="px-2.5 py-1 rounded-md bg-white border border-blue-200 hover:border-gov-secondary text-[11px] font-semibold text-slate-700 cursor-pointer"
                       >
                         {ap.label}
                       </button>
@@ -1097,7 +1147,7 @@ const AdminRulesPage = () => {
                             description: `Annual family income must not exceed ₹${Number(e.target.value || 0).toLocaleString('en-IN')}.`,
                           })
                         }
-                        className="w-full pl-7 pr-3 py-2 text-xs font-bold rounded-lg border border-blue-300 bg-white"
+                        className="w-full pl-7 pr-3 py-2.5 text-xs font-bold rounded-lg border border-blue-300 bg-white"
                         placeholder="250000"
                       />
                     </div>
@@ -1138,14 +1188,14 @@ const AdminRulesPage = () => {
                 </div>
               )}
 
-              {/* 5. GENDER WIDGET (Condition #4) */}
+              {/* 5. GENDER WIDGET (Condition #4 - Specifically simplified, no operator dropdown needed) */}
               {formData.field === 'gender' && (
-                <div className="space-y-2">
+                <div className="space-y-3">
                   <label className="block text-xs font-bold text-slate-800 flex items-center gap-1.5">
                     <Users className="w-4 h-4 text-gov-secondary" />
                     <span>Select Target Gender:</span>
                   </label>
-                  <div className="flex flex-wrap gap-2">
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
                     {[
                       { label: 'Female / Women Only', val: 'Female', desc: 'Designated exclusively for female beneficiaries' },
                       { label: 'Male / Men Only', val: 'Male', desc: 'Designated for male applicants' },
@@ -1159,29 +1209,32 @@ const AdminRulesPage = () => {
                           setFormData({
                             ...formData,
                             expectedValue: g.val,
-                            operator: g.val === 'All Genders' ? 'IN' : '==',
+                            operator: g.val === 'All Genders' ? 'EXISTS' : '==',
                             description: g.desc,
                           })
                         }
-                        className={`px-3 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                        className={`p-3 rounded-xl text-xs font-bold transition-all cursor-pointer text-center border ${
                           formData.expectedValue === g.val
-                            ? 'bg-gov-secondary text-white shadow-xs'
-                            : 'bg-white border border-blue-200 text-slate-700 hover:bg-slate-50'
+                            ? 'bg-gov-secondary text-white border-gov-secondary shadow-sm ring-2 ring-gov-secondary/30'
+                            : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50 hover:border-slate-300'
                         }`}
                       >
                         {g.label}
                       </button>
                     ))}
                   </div>
+                  <p className="text-[11px] text-slate-500">
+                    Click a target gender option above. No equality operators needed — rule logic applies automatically.
+                  </p>
                 </div>
               )}
 
               {/* 6. SOCIAL CATEGORY WIDGET (Condition #7) */}
               {formData.field === 'community' && (
-                <div className="space-y-2">
+                <div className="space-y-2.5">
                   <label className="block text-xs font-bold text-slate-800 flex items-center gap-1.5">
                     <Users className="w-4 h-4 text-gov-secondary" />
-                    <span>Select Eligible Social Categories (Multi-Select Checklist):</span>
+                    <span>Select Eligible Social Categories:</span>
                   </label>
                   <div className="flex flex-wrap gap-2">
                     {COMMUNITY_OPTIONS.map((comm, idx) => {
@@ -1211,7 +1264,7 @@ const AdminRulesPage = () => {
 
               {/* 7. RESIDENCE / STATE WIDGET (Condition #3) */}
               {formData.field === 'state' && (
-                <div className="space-y-2">
+                <div className="space-y-2.5">
                   <label className="block text-xs font-bold text-slate-800 flex items-center gap-1.5">
                     <MapPin className="w-4 h-4 text-gov-secondary" />
                     <span>Select Eligible State / Territory Residence:</span>
@@ -1239,10 +1292,10 @@ const AdminRulesPage = () => {
 
               {/* 8. EDUCATION LEVEL WIDGET (Condition #5) */}
               {formData.field === 'education' && (
-                <div className="space-y-2">
+                <div className="space-y-2.5">
                   <label className="block text-xs font-bold text-slate-800 flex items-center gap-1.5">
                     <GraduationCap className="w-4 h-4 text-gov-secondary" />
-                    <span>Select Minimum / Accepted Education Qualifications:</span>
+                    <span>Select Accepted Education Qualifications:</span>
                   </label>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                     {EDUCATION_OPTIONS.map((edu, idx) => {
@@ -1272,7 +1325,7 @@ const AdminRulesPage = () => {
 
               {/* 9. OCCUPATION WIDGET (Condition #6) */}
               {formData.field === 'occupation' && (
-                <div className="space-y-2">
+                <div className="space-y-2.5">
                   <label className="block text-xs font-bold text-slate-800 flex items-center gap-1.5">
                     <Briefcase className="w-4 h-4 text-gov-secondary" />
                     <span>Select Target Occupations:</span>
@@ -1305,7 +1358,7 @@ const AdminRulesPage = () => {
 
               {/* 10. EMPLOYMENT STATUS WIDGET (Condition #8) */}
               {formData.field === 'employmentStatus' && (
-                <div className="space-y-2">
+                <div className="space-y-2.5">
                   <label className="block text-xs font-bold text-slate-800 flex items-center gap-1.5">
                     <Briefcase className="w-4 h-4 text-gov-secondary" />
                     <span>Select Required Employment Status:</span>
@@ -1340,7 +1393,7 @@ const AdminRulesPage = () => {
 
               {/* 11. DISABILITY STATUS WIDGET (Condition #9) */}
               {formData.field === 'disabilityStatus' && (
-                <div className="space-y-2">
+                <div className="space-y-2.5">
                   <label className="block text-xs font-bold text-slate-800 flex items-center gap-1.5">
                     <ShieldAlert className="w-4 h-4 text-gov-secondary" />
                     <span>Set Disability Condition:</span>
@@ -1376,7 +1429,7 @@ const AdminRulesPage = () => {
 
               {/* 12. LAND OWNERSHIP WIDGET (Condition #10) */}
               {formData.field === 'landOwnership' && (
-                <div className="space-y-2">
+                <div className="space-y-2.5">
                   <label className="block text-xs font-bold text-slate-800 flex items-center gap-1.5">
                     <Layers className="w-4 h-4 text-gov-secondary" />
                     <span>Select Agricultural Land Holding Category:</span>
@@ -1414,7 +1467,7 @@ const AdminRulesPage = () => {
 
               {/* 13. FAMILY STATUS WIDGET (Condition #11) */}
               {formData.field === 'familyStatus' && (
-                <div className="space-y-2">
+                <div className="space-y-2.5">
                   <label className="block text-xs font-bold text-slate-800 flex items-center gap-1.5">
                     <Users className="w-4 h-4 text-gov-secondary" />
                     <span>Select Recognized Household Status Categories:</span>
@@ -1447,7 +1500,7 @@ const AdminRulesPage = () => {
 
               {/* 14. EXISTING BENEFITS WIDGET (Condition #12) */}
               {formData.field === 'existingBenefits' && (
-                <div className="space-y-2">
+                <div className="space-y-2.5">
                   <label className="block text-xs font-bold text-slate-800 flex items-center gap-1.5">
                     <ShieldAlert className="w-4 h-4 text-gov-secondary" />
                     <span>Select Ineligibility / Benefit Exclusions (Must NOT have):</span>
@@ -1480,7 +1533,7 @@ const AdminRulesPage = () => {
 
               {/* 15. LOCATION / REGIONAL DISTRICT WIDGET (Condition #15) */}
               {formData.field === 'district' && (
-                <div className="space-y-2">
+                <div className="space-y-2.5">
                   <label className="block text-xs font-bold text-slate-800 flex items-center gap-1.5">
                     <MapPin className="w-4 h-4 text-gov-secondary" />
                     <span>Select Eligible Regional Demarcation:</span>
@@ -1516,6 +1569,44 @@ const AdminRulesPage = () => {
                 </div>
               )}
             </div>
+          ) : (
+            /* Custom blank rule form - Only shown for CUSTOM_NEW */
+            <div className="p-5 rounded-2xl border border-amber-200 bg-amber-50/30 space-y-4">
+              <div className="border-b border-amber-200 pb-2">
+                <span className="text-xs font-bold text-amber-900 uppercase tracking-wider">
+                  Custom Blank Rule Configuration
+                </span>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <Select
+                  label="Citizen Profile Field"
+                  value={formData.field}
+                  onChange={(e) => setFormData({ ...formData, field: e.target.value })}
+                  options={RULE_FIELDS}
+                  required
+                />
+                <Select
+                  label="Evaluation Operator"
+                  value={formData.operator}
+                  onChange={(e) => setFormData({ ...formData, operator: e.target.value })}
+                  options={OPERATORS}
+                  required
+                />
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
+                    Target Evaluation Value <span className="text-gov-error">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.expectedValue}
+                    onChange={(e) => setFormData({ ...formData, expectedValue: e.target.value })}
+                    placeholder="e.g. 18, 60 or 250000"
+                    className="w-full text-xs rounded-lg border border-gov-border p-2 focus:outline-none focus:ring-2 focus:ring-gov-secondary font-mono bg-white font-bold"
+                    required
+                  />
+                </div>
+              </div>
+            </div>
           )}
 
           <div>
@@ -1527,19 +1618,25 @@ const AdminRulesPage = () => {
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
               placeholder="e.g. Beneficiary must satisfy the condition parameters configured above."
-              className="w-full text-xs rounded-lg border border-gov-border p-2.5 bg-white focus:outline-none focus:ring-2 focus:ring-gov-secondary"
+              className="w-full text-xs rounded-lg border border-gov-border p-2.5 bg-white focus:outline-none focus:ring-2 focus:ring-gov-secondary font-medium text-slate-800"
             />
           </div>
 
-          {/* Live Preview Box */}
-          <div className="p-3.5 rounded-xl border border-blue-200 bg-blue-50/70 text-blue-900 text-xs space-y-1">
-            <span className="font-bold flex items-center gap-1.5">
-              <Eye className="w-3.5 h-3.5 text-gov-secondary" />
-              Live Evaluation Logic Preview:
-            </span>
-            <code className="block bg-white p-2.5 rounded-lg border border-blue-200 text-slate-900 font-mono text-[12px] font-bold">
-              {previewText}
-            </code>
+          {/* Clean, Human-Friendly Live Condition Summary */}
+          <div className="p-3.5 rounded-xl border border-emerald-200 bg-emerald-50/70 text-emerald-950 text-xs space-y-1.5 shadow-2xs">
+            <div className="flex items-center justify-between">
+              <span className="font-bold flex items-center gap-1.5 text-emerald-900">
+                <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                <span>Eligibility Rule Summary:</span>
+              </span>
+              <span className="text-[10px] font-bold uppercase tracking-wider bg-white px-2 py-0.5 rounded border border-emerald-200 text-emerald-800">
+                {activeTemplateInfo ? activeTemplateInfo.name : formData.field}
+              </span>
+            </div>
+            <div className="bg-white p-2.5 rounded-lg border border-emerald-200 text-slate-900 font-bold text-xs flex items-center gap-2">
+              <span className="text-emerald-700">Requirement:</span>
+              <span className="text-slate-800 font-semibold">{getHumanFriendlySummary(formData)}</span>
+            </div>
           </div>
 
           {/* Condition Toggles & Save Button Bar */}
@@ -1630,13 +1727,14 @@ const AdminRulesPage = () => {
                       {rule.description || 'No description note'}
                     </p>
 
-                    <div className="flex items-center gap-1.5 pt-1 font-mono text-[11px]">
+                    <div className="flex items-center gap-1.5 pt-1 text-[11px]">
                       <span className="bg-slate-100 px-2 py-0.5 rounded text-slate-800 font-bold">
                         {rule.field}
                       </span>
-                      <span className="text-gov-secondary font-black">{rule.operator}</span>
-                      <span className="bg-blue-50 text-blue-900 px-2 py-0.5 rounded border border-blue-200 font-bold max-w-xs truncate">
-                        {JSON.stringify(rule.expectedValue)}
+                      <span className="bg-blue-50 text-blue-900 px-2 py-0.5 rounded border border-blue-200 font-medium max-w-xs truncate">
+                        {Array.isArray(rule.expectedValue)
+                          ? rule.expectedValue.join(', ')
+                          : String(rule.expectedValue)}
                       </span>
                     </div>
                   </div>
