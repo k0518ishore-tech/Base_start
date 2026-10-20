@@ -180,16 +180,18 @@ const UserDashboard = () => {
         </div>
 
         <div className="flex flex-wrap gap-3 shrink-0">
-          <Link to="/eligibility">
-            <Button variant="secondary" size="md" className="bg-white text-gov-primary hover:bg-blue-50 font-bold shadow-sm">
-              <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-              <span>Check Eligibility</span>
-            </Button>
+          <Link
+            to="/eligibility"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-white text-slate-900 font-bold text-sm shadow-sm hover:bg-blue-50 transition-colors"
+          >
+            <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+            <span className="text-slate-900">Check Eligibility</span>
           </Link>
-          <Link to="/schemes">
-            <Button variant="outline" size="md" className="border-white/40 text-white hover:bg-white/10">
-              Browse Schemes
-            </Button>
+          <Link
+            to="/schemes"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-white/15 hover:bg-white/25 text-white font-semibold text-sm border border-white/40 transition-colors shadow-xs"
+          >
+            <span className="text-white">Browse Schemes</span>
           </Link>
         </div>
       </div>
