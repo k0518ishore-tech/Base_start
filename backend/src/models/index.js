@@ -10,3 +10,4 @@ export { default as Notification } from './Notification.js';
 export { default as SystemNotification } from './SystemNotification.js';
 export { default as EligibilityCheck } from './EligibilityCheck.js';
 export { default as AuditLog } from './AuditLog.js';
+export { default as AdminRecommendation } from './AdminRecommendation.js';

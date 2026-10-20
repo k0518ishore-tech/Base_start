@@ -9,6 +9,8 @@ import {
   MessageSquare,
   ShieldCheck,
   Activity,
+  Sparkles,
+  Bell,
 } from 'lucide-react';
 
 const AdminSidebar = () => {
@@ -19,6 +21,8 @@ const AdminSidebar = () => {
     { label: 'Eligibility Rules', path: '/admin/rules', icon: Sliders },
     { label: 'Citizen Accounts', path: '/admin/users', icon: Users },
     { label: 'Feedback Desk', path: '/admin/feedback', icon: MessageSquare },
+    { label: 'Recommendations', path: '/admin/recommendations', icon: Sparkles },
+    { label: 'Notifications', path: '/admin/notifications', icon: Bell },
     { label: 'Quality Verification', path: '/admin/verification', icon: ShieldCheck },
   ];
 

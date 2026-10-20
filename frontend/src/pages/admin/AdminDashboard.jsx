@@ -13,6 +13,7 @@ import {
   Sparkles,
   Sliders,
   CheckCircle2,
+  Bell,
 } from 'lucide-react';
 import Card from '../../components/common/Card';
 import Badge from '../../components/common/Badge';
@@ -56,6 +57,18 @@ const ADMIN_MODULES = [
     desc: 'Audit official government source URLs, update verification stamps, and review public links.',
     path: '/admin/verification',
     icon: ShieldCheck,
+  },
+  {
+    title: 'Scheme Improvement Recommendations',
+    desc: 'Review automated escalations from repeated citizen feedback (threshold: 5 distinct citizens).',
+    path: '/admin/recommendations',
+    icon: Sparkles,
+  },
+  {
+    title: 'System Notifications & Lifecycle Feed',
+    desc: 'Real-time administrative stream of new citizen registrations, feedback submissions, and escalations.',
+    path: '/admin/notifications',
+    icon: Bell,
   },
   {
     title: 'Citizen Portal Hub',
@@ -247,9 +260,12 @@ const AdminDashboard = () => {
               <Activity className="w-4 h-4 text-emerald-600" />
               <span>System Notifications & Events</span>
             </h3>
-            <span className="text-[11px] font-semibold text-gov-muted uppercase tracking-wider">
-              Live Feed
-            </span>
+            <Link
+              to="/admin/notifications"
+              className="text-xs font-semibold text-gov-secondary hover:underline flex items-center gap-1"
+            >
+              <span>View All Feed &rarr;</span>
+            </Link>
           </div>
 
           <div className="space-y-3 max-h-[320px] overflow-y-auto">

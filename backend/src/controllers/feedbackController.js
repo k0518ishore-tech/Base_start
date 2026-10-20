@@ -1,6 +1,7 @@
 import Feedback from '../models/Feedback.js';
 import Scheme from '../models/Scheme.js';
 import { createUserNotification, createSystemNotification, recordAuditLog } from '../services/notifications/notificationService.js';
+import { processFeedbackForRecommendation } from '../services/recommendation/feedbackClusterService.js';
 
 export const submitFeedback = async (req, res, next) => {
   try {
@@ -34,10 +35,14 @@ export const submitFeedback = async (req, res, next) => {
       relatedEntityId: feedback._id,
     });
 
+    // Check if repeated feedback from 5 distinct citizens escalates to recommendation
+    const recommendation = await processFeedbackForRecommendation(feedback);
+
     return res.status(201).json({
       success: true,
       message: 'Feedback submitted successfully. Our administrative team will review it.',
       data: feedback,
+      escalatedToRecommendation: Boolean(recommendation),
     });
   } catch (error) {
     next(error);

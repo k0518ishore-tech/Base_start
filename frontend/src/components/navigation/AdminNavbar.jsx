@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import {
   Landmark,
@@ -16,9 +16,12 @@ import {
   Eye,
   Menu,
   X,
+  Bell,
+  Sparkles,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import Button from '../common/Button';
+import api from '../../services/api';
 
 const AdminNavbar = () => {
   const { user, logout } = useAuth();
@@ -27,6 +30,19 @@ const AdminNavbar = () => {
 
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [unreadNotificationsCount, setUnreadNotificationsCount] = useState(0);
+
+  useEffect(() => {
+    api
+      .get('/admin/system-notifications')
+      .then((res) => {
+        if (res.data.success) {
+          const unread = res.data.data.filter((n) => !n.isRead).length;
+          setUnreadNotificationsCount(unread);
+        }
+      })
+      .catch(() => {});
+  }, [location.pathname]);
 
   const handleLogout = () => {
     logout();
@@ -40,6 +56,7 @@ const AdminNavbar = () => {
     { label: 'Rule Builder', path: '/admin/rules' },
     { label: 'Users', path: '/admin/users' },
     { label: 'Feedback', path: '/admin/feedback' },
+    { label: 'Recommendations', path: '/admin/recommendations' },
     { label: 'Verification', path: '/admin/verification' },
   ];
 
@@ -100,6 +117,20 @@ const AdminNavbar = () => {
 
           {/* Right Action buttons */}
           <div className="flex items-center gap-2 sm:gap-3 shrink-0 ml-auto">
+            {/* Admin Notifications Bell */}
+            <Link
+              to="/admin/notifications"
+              className="relative p-2 rounded-lg bg-slate-800 hover:bg-slate-750 text-slate-300 hover:text-white border border-slate-700/80 transition-colors shrink-0"
+              title="Admin System Notifications"
+            >
+              <Bell className="w-4 h-4 text-amber-300" />
+              {unreadNotificationsCount > 0 && (
+                <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-rose-600 text-[10px] font-black text-white shadow-xs">
+                  {unreadNotificationsCount > 9 ? '9+' : unreadNotificationsCount}
+                </span>
+              )}
+            </Link>
+
             {/* Switch to Citizen View shortcut */}
             <Link
               to="/dashboard"
@@ -167,6 +198,22 @@ const AdminNavbar = () => {
                     >
                       <Sliders className="w-4 h-4 text-slate-400" />
                       Rule Builder
+                    </Link>
+                    <Link
+                      to="/admin/recommendations"
+                      onClick={() => setIsDropdownOpen(false)}
+                      className="flex items-center gap-2.5 px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                    >
+                      <Sparkles className="w-4 h-4 text-amber-500" />
+                      Recommendations
+                    </Link>
+                    <Link
+                      to="/admin/notifications"
+                      onClick={() => setIsDropdownOpen(false)}
+                      className="flex items-center gap-2.5 px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                    >
+                      <Bell className="w-4 h-4 text-slate-400" />
+                      Notifications Feed
                     </Link>
                     <Link
                       to="/dashboard"
