@@ -15,7 +15,7 @@ const AdminVerificationPage = () => {
   const fetchSchemes = async () => {
     setIsLoading(true);
     try {
-      const res = await api.get('/schemes?limit=100&includeInactive=true');
+      const res = await api.get('/schemes?limit=2500&includeInactive=true&sortBy=name_asc');
       if (res.data.success) {
         setSchemes(res.data.data);
       }

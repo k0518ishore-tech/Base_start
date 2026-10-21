@@ -46,7 +46,7 @@ const FeedbackPage = () => {
     fetchMyFeedback();
 
     api
-      .get('/schemes?limit=50')
+      .get('/schemes?limit=2500&sortBy=name_asc')
       .then((res) => {
         if (res.data.success) {
           setSchemes(res.data.data);

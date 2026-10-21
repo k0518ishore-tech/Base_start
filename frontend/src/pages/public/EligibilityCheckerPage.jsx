@@ -12,6 +12,7 @@ import {
   Building2,
   RefreshCw,
   Info,
+  Search,
 } from 'lucide-react';
 import Button from '../../components/common/Button';
 import Card from '../../components/common/Card';
@@ -61,6 +62,8 @@ const EligibilityCheckerPage = () => {
   const [schemes, setSchemes] = useState([]);
   const [selectedSchemeId, setSelectedSchemeId] = useState(preselectedSchemeId);
   const [checkMode, setCheckMode] = useState(preselectedSchemeId ? 'single' : 'batch'); // 'single' | 'batch'
+  const [schemeSearchTerm, setSchemeSearchTerm] = useState('');
+  const [isLoadingSchemes, setIsLoadingSchemes] = useState(false);
 
   // User input profile state for assessment (prefilled from profile if logged in)
   const [formData, setFormData] = useState({
@@ -80,20 +83,36 @@ const EligibilityCheckerPage = () => {
   const [singleResult, setSingleResult] = useState(null);
   const [batchResult, setBatchResult] = useState(null);
 
-  // Load schemes list
+  // Load all schemes list sorted alphabetically
   useEffect(() => {
+    setIsLoadingSchemes(true);
     api
-      .get('/schemes?limit=50')
+      .get('/schemes?limit=2500&sortBy=name_asc')
       .then((res) => {
         if (res.data.success) {
-          setSchemes(res.data.data);
-          if (!selectedSchemeId && res.data.data.length > 0) {
-            setSelectedSchemeId(res.data.data[0]._id);
+          const list = res.data.data || [];
+          setSchemes(list);
+          if (preselectedSchemeId) {
+            setSelectedSchemeId(preselectedSchemeId);
+          } else if (list.length > 0 && !selectedSchemeId) {
+            setSelectedSchemeId(list[0]._id);
           }
         }
       })
-      .catch((err) => console.error(err));
-  }, []);
+      .catch((err) => console.error('Failed to load schemes for evaluation:', err))
+      .finally(() => setIsLoadingSchemes(false));
+  }, [preselectedSchemeId]);
+
+  const filteredSchemes = schemes.filter((s) => {
+    if (!schemeSearchTerm.trim()) return true;
+    const term = schemeSearchTerm.toLowerCase();
+    const nameMatch = s.schemeName?.toLowerCase().includes(term);
+    const catMatch = s.category?.toLowerCase().includes(term);
+    const stateMatch = Array.isArray(s.applicableStates)
+      ? s.applicableStates.some((st) => st.toLowerCase().includes(term))
+      : s.applicableStates?.toLowerCase().includes(term);
+    return nameMatch || catMatch || stateMatch;
+  });
 
   // Prepopulate form if profile is available
   useEffect(() => {
@@ -247,21 +266,74 @@ const EligibilityCheckerPage = () => {
 
           <form onSubmit={handleRunEvaluation} className="space-y-4 text-xs">
             {checkMode === 'single' && (
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
-                  Select Scheme to Evaluate <span className="text-gov-error">*</span>
-                </label>
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider">
+                    Select Scheme to Evaluate <span className="text-gov-error">*</span>
+                  </label>
+                  <span className="text-[11px] text-gov-muted font-medium">
+                    {isLoadingSchemes ? (
+                      'Loading directory...'
+                    ) : (
+                      `${filteredSchemes.length} of ${schemes.length} schemes`
+                    )}
+                  </span>
+                </div>
+
+                {/* Instant Search Filter for Schemes */}
+                <div className="relative">
+                  <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  <input
+                    type="text"
+                    value={schemeSearchTerm}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setSchemeSearchTerm(val);
+                      if (val.trim()) {
+                        const term = val.toLowerCase();
+                        const matching = schemes.filter(
+                          (s) =>
+                            s.schemeName?.toLowerCase().includes(term) ||
+                            s.category?.toLowerCase().includes(term) ||
+                            (Array.isArray(s.applicableStates)
+                              ? s.applicableStates.some((st) => st.toLowerCase().includes(term))
+                              : s.applicableStates?.toLowerCase().includes(term))
+                        );
+                        if (matching.length > 0 && !matching.some((s) => s._id === selectedSchemeId)) {
+                          setSelectedSchemeId(matching[0]._id);
+                        }
+                      }
+                    }}
+                    placeholder="Search schemes by name, category, or state..."
+                    className="w-full pl-8 pr-12 py-1.5 text-xs rounded-lg border border-gov-border bg-slate-50/70 focus:bg-white focus:outline-none focus:ring-1 focus:ring-gov-secondary transition-all"
+                  />
+                  {schemeSearchTerm && (
+                    <button
+                      type="button"
+                      onClick={() => setSchemeSearchTerm('')}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-slate-500 hover:text-slate-800 bg-slate-200 hover:bg-slate-300 rounded px-1.5 py-0.5 transition-colors"
+                    >
+                      Clear
+                    </button>
+                  )}
+                </div>
+
                 <select
                   value={selectedSchemeId}
                   onChange={(e) => setSelectedSchemeId(e.target.value)}
-                  className="w-full text-xs rounded-lg border border-gov-border p-2.5 bg-white focus:outline-none focus:ring-2 focus:ring-gov-secondary"
+                  className="w-full text-xs rounded-lg border border-gov-border p-2.5 bg-white focus:outline-none focus:ring-2 focus:ring-gov-secondary shadow-sm"
                   required
+                  disabled={isLoadingSchemes || filteredSchemes.length === 0}
                 >
-                  {schemes.map((s) => (
-                    <option key={s._id} value={s._id}>
-                      {s.schemeName}
-                    </option>
-                  ))}
+                  {filteredSchemes.length === 0 ? (
+                    <option value="">No schemes match "{schemeSearchTerm}"</option>
+                  ) : (
+                    filteredSchemes.map((s) => (
+                      <option key={s._id} value={s._id}>
+                        {s.schemeName} {s.category ? `• ${s.category}` : ''}
+                      </option>
+                    ))
+                  )}
                 </select>
               </div>
             )}
