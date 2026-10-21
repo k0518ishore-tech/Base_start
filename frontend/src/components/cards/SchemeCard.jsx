@@ -67,11 +67,6 @@ const SchemeCard = ({ scheme, onBookmarkChange = null }) => {
                 {scheme.recommendationBadge}
               </Badge>
             )}
-            {scheme.matchPercentage && (
-              <Badge variant="success" size="xs" className="font-bold">
-                {scheme.matchPercentage}% Match
-              </Badge>
-            )}
             <Badge variant="secondary" size="xs">
               {scheme.category || 'General'}
             </Badge>
