@@ -18,12 +18,14 @@ export const checkSingleScheme = async (req, res, next) => {
 
     // Determine profile data to use
     let profileData = {};
-    if (customProfile) {
-      // User provided quick-check parameters in form
-      profileData = customProfile;
-    } else if (req.user) {
+    if (req.user) {
       const userProfile = await UserProfile.findOne({ userId: req.user._id });
-      profileData = userProfile ? userProfile.toObject() : {};
+      if (userProfile) {
+        profileData = userProfile.toObject();
+      }
+    }
+    if (customProfile) {
+      profileData = { ...profileData, ...customProfile };
     }
 
     const evaluation = evaluateSchemeEligibility(scheme, rules, profileData);
@@ -54,12 +56,15 @@ export const checkAllSchemes = async (req, res, next) => {
     const { customProfile } = req.body;
 
     let profileData = {};
-    if (customProfile) {
-      profileData = customProfile;
-    } else if (req.user) {
+    if (req.user) {
       const userProfile = await UserProfile.findOne({ userId: req.user._id });
-      profileData = userProfile ? userProfile.toObject() : {};
-    } else {
+      if (userProfile) {
+        profileData = userProfile.toObject();
+      }
+    }
+    if (customProfile) {
+      profileData = { ...profileData, ...customProfile };
+    } else if (!req.user && (!profileData || Object.keys(profileData).length === 0)) {
       return res.status(400).json({
         success: false,
         message: 'Please log in or supply citizen profile details to check eligibility across schemes.',

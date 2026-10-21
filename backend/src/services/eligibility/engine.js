@@ -56,6 +56,13 @@ export const extractProfileValue = (profile, field) => {
     if (profile.occupation && String(profile.occupation).toLowerCase().includes('farmer')) {
       return 'Cultivable Agricultural Landholder (PM-KISAN Standard)';
     }
+    return 'Non-agricultural / Landless Citizen';
+  }
+
+  if (field === 'existingBenefits') {
+    if (profile.existingBenefits) return profile.existingBenefits;
+    if (profile.otherDetails?.existingBenefits) return profile.otherDetails.existingBenefits;
+    return 'No Overlapping Benefits (Clear)';
   }
 
   if (field === 'familyStatus') {
