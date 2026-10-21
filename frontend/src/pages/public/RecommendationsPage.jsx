@@ -1,483 +1,414 @@
-import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState, useEffect, useMemo } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import {
   Sparkles,
   ArrowRight,
   CheckCircle2,
   User,
-  SlidersHorizontal,
   Search,
   RotateCcw,
   History,
-  TrendingUp,
-  Brain,
   Trash2,
   Filter,
   ShieldCheck,
   Compass,
-  Lightbulb,
+  Building2,
+  Layers,
 } from 'lucide-react';
 import SchemeCard from '../../components/cards/SchemeCard';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import EmptyState from '../../components/common/EmptyState';
 import Badge from '../../components/common/Badge';
-import Button from '../../components/common/Button';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import api from '../../services/api';
 
 const CATEGORIES = [
   'All',
+  'Education',
   'Agriculture',
   'Healthcare',
   'Housing',
   'Finance & Loans',
-  'Education',
   'Social Welfare',
   'Skill & Livelihood',
   'Women & Child',
 ];
 
-const QUICK_STARTER_TOPICS = [
-  { label: 'College Scholarships', query: 'scholarship college student' },
-  { label: 'Free Laptop & Tech', query: 'laptop tablet education' },
-  { label: 'Farmer Direct Support', query: 'farmer agriculture kisan' },
-  { label: 'Healthcare & Insurance', query: 'ayushman health insurance' },
-  { label: 'Women & Self-Help Loans', query: 'women self help group loan' },
-];
-
 const RecommendationsPage = () => {
-  const { isAuthenticated, user } = useAuth();
+  const { isAuthenticated, user, profile } = useAuth();
   const { showToast } = useToast();
+  const navigate = useNavigate();
 
-  // Mode switcher: 'rag' (AI Search History) vs 'profile' (Demographic Profile)
-  const [activeTab, setActiveTab] = useState('rag');
-
-  // --- Profile Mode State ---
+  // Filter state
+  const [activeSourceFilter, setActiveSourceFilter] = useState('all'); // 'all' | 'search' | 'profile'
   const [selectedCategory, setSelectedCategory] = useState('All');
-  const [profileSchemes, setProfileSchemes] = useState([]);
-  const [profileSummary, setProfileSummary] = useState(null);
-  const [isProfileLoading, setIsProfileLoading] = useState(false);
+  const [searchKeyword, setSearchKeyword] = useState('');
+  const [selectedTopic, setSelectedTopic] = useState('');
 
-  // --- RAG AI Search Mode State ---
-  const [ragSchemes, setRagSchemes] = useState([]);
-  const [searchInsights, setSearchInsights] = useState({
+  // Data state
+  const [ragData, setRagData] = useState({
+    schemes: [],
     searchedTopics: [],
     recentQueries: [],
     aiSummary: '',
+    hasSearchHistory: false,
   });
-  const [hasSearchHistory, setHasSearchHistory] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [activeSearchTerm, setActiveSearchTerm] = useState('');
-  const [isRagLoading, setIsRagLoading] = useState(true);
+  const [profileSummary, setProfileSummary] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
   const [isClearingHistory, setIsClearingHistory] = useState(false);
 
-  // Load RAG Recommendations
-  const fetchRagRecommendations = async (customQuery = '') => {
-    setIsRagLoading(true);
+  // Fetch recommendations
+  const loadRecommendations = async () => {
+    setIsLoading(true);
     try {
-      const params = {};
-      if (customQuery && customQuery.trim()) {
-        params.query = customQuery.trim();
+      const [ragRes, profileRes] = await Promise.all([
+        api.get('/schemes/rag-recommendations?limit=30').catch(() => ({ data: { success: false, data: [] } })),
+        api.get('/schemes/recommended').catch(() => ({ data: { success: false, data: [] } })),
+      ]);
+
+      let combinedSchemes = [];
+      const seenIds = new Set();
+
+      // Process RAG search-based recommendations
+      if (ragRes.data?.success) {
+        const rSchemes = ragRes.data.data || [];
+        rSchemes.forEach((s) => {
+          if (!seenIds.has(s._id)) {
+            seenIds.add(s._id);
+            combinedSchemes.push({
+              ...s,
+              recommendationType: s.matchedKeyword ? 'search' : 'profile',
+            });
+          }
+        });
+
+        setRagData({
+          schemes: rSchemes,
+          searchedTopics: ragRes.data.searchInsights?.searchedTopics || [],
+          recentQueries: ragRes.data.searchInsights?.recentQueries || [],
+          aiSummary: ragRes.data.searchInsights?.aiSummary || '',
+          hasSearchHistory: Boolean(ragRes.data.hasSearchHistory),
+        });
       }
-      const res = await api.get('/schemes/rag-recommendations', { params });
-      if (res.data.success) {
-        setRagSchemes(res.data.data || []);
-        setHasSearchHistory(Boolean(res.data.hasSearchHistory));
-        if (res.data.searchInsights) {
-          setSearchInsights(res.data.searchInsights);
+
+      // Process profile-based recommendations
+      if (profileRes.data?.success) {
+        const pSchemes = profileRes.data.data || [];
+        if (profileRes.data.profileSummary) {
+          setProfileSummary(profileRes.data.profileSummary);
         }
+
+        pSchemes.forEach((s) => {
+          if (!seenIds.has(s._id)) {
+            seenIds.add(s._id);
+            combinedSchemes.push({
+              ...s,
+              recommendationType: 'profile',
+              recommendationBadge: s.recommendationBadge || 'Profile Match',
+              recommendationReason: s.recommendationReason || 'Matches your profile eligibility criteria',
+            });
+          }
+        });
       }
+
+      setAllSchemes(combinedSchemes);
     } catch (err) {
-      console.error('Error fetching RAG recommendations:', err);
+      console.error('Error loading recommendations:', err);
     } finally {
-      setIsRagLoading(false);
+      setIsLoading(false);
     }
   };
 
-  // Load Profile-based Recommendations
-  const fetchProfileRecommendations = async () => {
-    setIsProfileLoading(true);
-    try {
-      const params = selectedCategory !== 'All' ? { category: selectedCategory } : {};
-      const res = await api.get('/schemes/recommended', { params });
-      if (res.data.success) {
-        setProfileSchemes(res.data.data || []);
-        if (res.data.profileSummary) {
-          setProfileSummary(res.data.profileSummary);
-        }
-      }
-    } catch (err) {
-      console.error('Error fetching profile recommendations:', err);
-    } finally {
-      setIsProfileLoading(false);
-    }
-  };
-
-  // Initial load
-  useEffect(() => {
-    fetchRagRecommendations(activeSearchTerm);
-  }, [activeSearchTerm]);
+  const [allSchemes, setAllSchemes] = useState([]);
 
   useEffect(() => {
-    if (activeTab === 'profile') {
-      fetchProfileRecommendations();
-    }
-  }, [activeTab, selectedCategory]);
+    loadRecommendations();
+  }, [isAuthenticated]);
 
-  const handleSearchSubmit = (e) => {
-    e.preventDefault();
-    if (!searchQuery.trim()) return;
-    setActiveSearchTerm(searchQuery.trim());
-  };
-
-  const handleTopicClick = (topic) => {
-    setSearchQuery(topic);
-    setActiveSearchTerm(topic);
-  };
-
-  const handleResetSearch = () => {
-    setSearchQuery('');
-    setActiveSearchTerm('');
-  };
-
+  // Clear search history
   const handleClearHistory = async () => {
-    if (!window.confirm('Are you sure you want to clear your search and browsing history? This will reset your AI recommendations.')) {
+    if (!window.confirm('Clear your recent search history? Recommendations will reset to your profile only.')) {
       return;
     }
     setIsClearingHistory(true);
     try {
       const res = await api.delete('/search-history/clear');
       if (res.data.success) {
-        showToast('Search history cleared successfully', 'success');
-        setSearchQuery('');
-        setActiveSearchTerm('');
-        fetchRagRecommendations('');
+        showToast('Search history cleared', 'success');
+        setSelectedTopic('');
+        setSearchKeyword('');
+        loadRecommendations();
       }
     } catch (err) {
-      showToast(err.response?.data?.message || 'Failed to clear search history', 'error');
+      showToast('Failed to clear search history', 'error');
     } finally {
       setIsClearingHistory(false);
     }
   };
 
+  // Filter schemes based on active source, category, and keyword
+  const filteredSchemes = useMemo(() => {
+    return allSchemes.filter((scheme) => {
+      // Source filter ('all' | 'search' | 'profile')
+      if (activeSourceFilter === 'search' && scheme.recommendationType !== 'search') {
+        return false;
+      }
+      if (activeSourceFilter === 'profile' && scheme.recommendationType !== 'profile') {
+        return false;
+      }
+
+      // Category filter
+      if (selectedCategory !== 'All' && scheme.category !== selectedCategory) {
+        return false;
+      }
+
+      // Topic filter (from pill click)
+      if (selectedTopic) {
+        const text = `${scheme.schemeName} ${scheme.category} ${scheme.shortDescription}`.toLowerCase();
+        if (!text.includes(selectedTopic.toLowerCase())) {
+          return false;
+        }
+      }
+
+      // Search keyword filter
+      if (searchKeyword.trim()) {
+        const query = searchKeyword.toLowerCase().trim();
+        const text = `${scheme.schemeName} ${scheme.category} ${scheme.shortDescription} ${scheme.ministry}`.toLowerCase();
+        if (!text.includes(query)) {
+          return false;
+        }
+      }
+
+      return true;
+    });
+  }, [allSchemes, activeSourceFilter, selectedCategory, selectedTopic, searchKeyword]);
+
+  // Counts for tabs
+  const searchMatchCount = useMemo(
+    () => allSchemes.filter((s) => s.recommendationType === 'search').length,
+    [allSchemes]
+  );
+  const profileMatchCount = useMemo(
+    () => allSchemes.filter((s) => s.recommendationType === 'profile').length,
+    [allSchemes]
+  );
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
-      {/* Header & Tabs */}
+      {/* Page Header */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-gov-border pb-5">
         <div>
-          <div className="flex items-center gap-2 mb-1">
-            <span className="inline-flex items-center gap-1 text-[11px] font-bold uppercase tracking-wider text-amber-800 bg-amber-100 border border-amber-200 px-2.5 py-0.5 rounded-full">
-              <Sparkles className="w-3 h-3 text-amber-600" />
-              Intelligent Matching Engine
+          <div className="flex items-center gap-2 mb-1.5">
+            <span className="inline-flex items-center gap-1 text-[11px] font-bold uppercase tracking-wider text-gov-secondary bg-blue-50 border border-blue-200/80 px-2.5 py-0.5 rounded-full">
+              <Sparkles className="w-3 h-3 text-amber-500" />
+              Personalized Recommendations
             </span>
           </div>
           <h1 className="text-2xl sm:text-3xl font-extrabold text-gov-primary tracking-tight">
-            Recommended Schemes
+            Recommended For You
           </h1>
           <p className="text-sm text-gov-muted mt-1">
-            Personalized welfare initiatives retrieved from your search intent and verified against your citizen profile.
+            Welfare schemes matched with your recent search interests and verified for your profile eligibility.
           </p>
         </div>
 
-        {/* Tab Toggle Switcher */}
+        {/* Source Filter Switcher */}
         <div className="inline-flex p-1 bg-slate-100 rounded-xl border border-slate-200 self-start md:self-auto shrink-0 shadow-2xs">
           <button
-            onClick={() => setActiveTab('rag')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all ${
-              activeTab === 'rag'
+            onClick={() => setActiveSourceFilter('all')}
+            className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all ${
+              activeSourceFilter === 'all'
                 ? 'bg-gov-primary text-white shadow-xs'
                 : 'text-slate-600 hover:text-slate-900'
             }`}
           >
-            <Brain className="w-4 h-4 text-amber-400" />
-            <span>AI Search Suggestions (RAG)</span>
-            {hasSearchHistory && (
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" title="Active search history detected" />
-            )}
+            All Recommended ({allSchemes.length})
           </button>
 
+          {ragData.hasSearchHistory && searchMatchCount > 0 && (
+            <button
+              onClick={() => setActiveSourceFilter('search')}
+              className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                activeSourceFilter === 'search'
+                  ? 'bg-gov-primary text-white shadow-xs'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              <span>From Your Searches</span>
+              <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
+                activeSourceFilter === 'search' ? 'bg-white/20 text-white' : 'bg-amber-100 text-amber-800'
+              }`}>
+                {searchMatchCount}
+              </span>
+            </button>
+          )}
+
           <button
-            onClick={() => setActiveTab('profile')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all ${
-              activeTab === 'profile'
+            onClick={() => setActiveSourceFilter('profile')}
+            className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all ${
+              activeSourceFilter === 'profile'
                 ? 'bg-gov-primary text-white shadow-xs'
                 : 'text-slate-600 hover:text-slate-900'
             }`}
           >
-            <ShieldCheck className="w-4 h-4 text-emerald-400" />
-            <span>Profile Demographic Matched</span>
+            <span>From Your Profile</span>
+            <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
+              activeSourceFilter === 'profile' ? 'bg-white/20 text-white' : 'bg-emerald-100 text-emerald-800'
+            }`}>
+              {profileMatchCount}
+            </span>
           </button>
         </div>
       </div>
 
-      {/* ================= TAB 1: RAG RECOMMENDATIONS ================= */}
-      {activeTab === 'rag' && (
-        <div className="space-y-6">
-          {/* AI Search & Retrieval Insights Banner */}
-          <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#0c2340] via-[#12335a] to-[#1a4577] text-white p-5 sm:p-6 shadow-card border border-blue-900/40">
-            {/* Background geometric accents */}
-            <div className="absolute top-0 right-0 -mt-10 -mr-10 w-48 h-48 bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
-            <div className="absolute bottom-0 left-1/3 -mb-10 w-40 h-40 bg-amber-500/10 rounded-full blur-2xl pointer-events-none" />
+      {/* Real-Application Context & Interest Bar */}
+      <div className="bg-gradient-to-r from-blue-50/70 via-slate-50 to-amber-50/40 border border-slate-200/90 rounded-2xl p-4 sm:p-5 shadow-xs">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+          {/* Summary & Active Profile/Search Context */}
+          <div className="space-y-2 flex-1">
+            <div className="flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              <p className="text-xs sm:text-sm font-semibold text-slate-800">
+                {ragData.aiSummary || (
+                  profileSummary
+                    ? `Showing schemes you qualify for as a ${profileSummary.occupation || 'citizen'} in ${profileSummary.state || 'India'}.`
+                    : 'Showing top verified schemes you are currently eligible to apply for.'
+                )}
+              </p>
+            </div>
 
-            <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
-              <div className="space-y-3 flex-1">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className="flex items-center gap-1 text-[11px] font-bold bg-amber-400/20 text-amber-300 border border-amber-400/30 px-2.5 py-0.5 rounded-md">
-                    <Brain className="w-3.5 h-3.5 text-amber-300" />
-                    RAG Knowledge Retrieval
-                  </span>
-                  <span className="text-[11px] font-medium text-blue-200">
-                    Past Search & Browsing History Synthesis
-                  </span>
-                </div>
+            {/* Recent Search Topic Pills */}
+            {ragData.searchedTopics && ragData.searchedTopics.length > 0 && (
+              <div className="flex items-center gap-1.5 flex-wrap pt-1 text-xs">
+                <span className="text-slate-500 font-medium flex items-center gap-1 mr-1">
+                  <History className="w-3.5 h-3.5 text-slate-400" />
+                  Your recent topics:
+                </span>
+                {ragData.searchedTopics.map((topic, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => {
+                      if (selectedTopic === topic) {
+                        setSelectedTopic('');
+                      } else {
+                        setSelectedTopic(topic);
+                        setActiveSourceFilter('all');
+                      }
+                    }}
+                    className={`px-2.5 py-0.5 rounded-full text-xs font-semibold transition-colors border ${
+                      selectedTopic === topic
+                        ? 'bg-gov-secondary text-white border-gov-secondary shadow-xs'
+                        : 'bg-white hover:bg-slate-100 text-slate-700 border-slate-200'
+                    }`}
+                  >
+                    {topic}
+                  </button>
+                ))}
 
-                <p className="text-sm sm:text-base text-blue-50 leading-relaxed font-medium">
-                  {searchInsights.aiSummary || (
-                    hasSearchHistory
-                      ? 'Analyzing your recent portal search history and cross-checking eligibility rules in real time...'
-                      : 'Explore welfare schemes by typing a search keyword or selecting a recommended topic below.'
-                  )}
-                </p>
-
-                {/* Topics Pills */}
-                {searchInsights.searchedTopics && searchInsights.searchedTopics.length > 0 && (
-                  <div className="flex items-center gap-2 flex-wrap pt-1">
-                    <span className="text-xs text-blue-200 font-semibold flex items-center gap-1">
-                      <History className="w-3.5 h-3.5 text-blue-300" />
-                      Learned Interests:
-                    </span>
-                    {searchInsights.searchedTopics.map((topic, idx) => (
-                      <button
-                        key={idx}
-                        onClick={() => handleTopicClick(topic)}
-                        className={`text-xs px-2.5 py-0.5 rounded-full font-medium transition-colors border ${
-                          activeSearchTerm.toLowerCase() === topic.toLowerCase()
-                            ? 'bg-amber-400 text-slate-950 border-amber-400 font-bold shadow-xs'
-                            : 'bg-white/10 hover:bg-white/20 text-blue-100 border-white/20'
-                        }`}
-                      >
-                        #{topic}
-                      </button>
-                    ))}
-                    {activeSearchTerm && (
-                      <button
-                        onClick={handleResetSearch}
-                        className="text-xs text-amber-300 underline hover:text-amber-200 ml-1 font-medium flex items-center gap-1"
-                      >
-                        <RotateCcw className="w-3 h-3" />
-                        Reset
-                      </button>
-                    )}
-                  </div>
+                {selectedTopic && (
+                  <button
+                    onClick={() => setSelectedTopic('')}
+                    className="text-xs text-gov-secondary hover:underline font-semibold ml-1 flex items-center gap-1"
+                  >
+                    <RotateCcw className="w-3 h-3" />
+                    Reset topic
+                  </button>
                 )}
               </div>
-
-              {/* Interactive Quick Search Box */}
-              <div className="lg:w-80 shrink-0 bg-white/10 backdrop-blur-md p-3.5 rounded-xl border border-white/15 shadow-inner">
-                <form onSubmit={handleSearchSubmit} className="space-y-2">
-                  <div className="text-[11px] font-bold text-blue-200 uppercase tracking-wider flex items-center justify-between">
-                    <span>Search or Test Topic</span>
-                    {hasSearchHistory && isAuthenticated && (
-                      <button
-                        type="button"
-                        onClick={handleClearHistory}
-                        disabled={isClearingHistory}
-                        title="Clear all stored search interactions"
-                        className="text-blue-300 hover:text-rose-300 transition-colors flex items-center gap-1 text-[10px]"
-                      >
-                        <Trash2 className="w-3 h-3" />
-                        Clear History
-                      </button>
-                    )}
-                  </div>
-                  <div className="relative">
-                    <Search className="w-4 h-4 text-blue-200 absolute left-3 top-1/2 -translate-y-1/2" />
-                    <input
-                      type="text"
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      placeholder="e.g. laptop, solar, scholarship..."
-                      className="w-full pl-9 pr-3 py-1.5 rounded-lg bg-white/95 text-slate-900 placeholder-slate-400 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-amber-400 border border-transparent"
-                    />
-                  </div>
-                  <div className="flex gap-2">
-                    <button
-                      type="submit"
-                      className="flex-1 py-1.5 px-3 rounded-lg bg-amber-400 hover:bg-amber-300 text-slate-950 font-bold text-xs transition-colors flex items-center justify-center gap-1 shadow-xs"
-                    >
-                      <Sparkles className="w-3.5 h-3.5 text-slate-950" />
-                      Retrieve
-                    </button>
-                    {activeSearchTerm && (
-                      <button
-                        type="button"
-                        onClick={handleResetSearch}
-                        className="py-1.5 px-3 rounded-lg bg-white/15 hover:bg-white/25 text-white font-medium text-xs transition-colors"
-                      >
-                        Reset
-                      </button>
-                    )}
-                  </div>
-                </form>
-              </div>
-            </div>
+            )}
           </div>
 
-          {/* Quick Starter Topics (When starting out or looking for inspiration) */}
-          <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar text-xs">
-            <span className="text-slate-500 font-semibold shrink-0 flex items-center gap-1">
-              <Lightbulb className="w-3.5 h-3.5 text-amber-500" />
-              Explore Topics:
-            </span>
-            {QUICK_STARTER_TOPICS.map((item, idx) => (
+          {/* Quick Filter Search & Clear History */}
+          <div className="flex items-center gap-2.5 shrink-0">
+            <div className="relative w-full sm:w-64">
+              <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+              <input
+                type="text"
+                value={searchKeyword}
+                onChange={(e) => setSearchKeyword(e.target.value)}
+                placeholder="Filter recommendations..."
+                className="w-full pl-9 pr-3 py-1.5 rounded-lg border border-slate-200 bg-white text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-gov-secondary"
+              />
+            </div>
+
+            {ragData.hasSearchHistory && isAuthenticated && (
               <button
-                key={idx}
-                onClick={() => handleTopicClick(item.label)}
-                className={`px-3 py-1 rounded-lg border text-xs whitespace-nowrap transition-colors font-medium ${
-                  activeSearchTerm.toLowerCase() === item.label.toLowerCase()
-                    ? 'bg-gov-primary text-white border-gov-primary shadow-xs'
-                    : 'bg-white border-slate-200 text-slate-700 hover:border-slate-300 hover:bg-slate-50'
-                }`}
+                onClick={handleClearHistory}
+                disabled={isClearingHistory}
+                title="Clear your stored search history"
+                className="p-2 rounded-lg border border-slate-200 bg-white hover:bg-rose-50 hover:text-rose-600 text-slate-400 transition-colors text-xs flex items-center gap-1 shrink-0"
               >
-                {item.label}
+                <Trash2 className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Clear History</span>
               </button>
-            ))}
+            )}
           </div>
+        </div>
+      </div>
 
-          {/* Results Summary Bar */}
-          <div className="flex items-center justify-between text-xs text-gov-muted pt-1">
-            <div className="flex items-center gap-2">
-              <span className="font-semibold text-slate-700">
-                Found <strong className="text-gov-primary font-bold">{ragSchemes.length}</strong> Verified Eligible Schemes
-              </span>
-              {activeSearchTerm && (
-                <span className="bg-amber-100 text-amber-900 border border-amber-200 px-2 py-0.5 rounded text-[11px] font-medium">
-                  Keyword Filter: "{activeSearchTerm}"
-                </span>
-              )}
-            </div>
-            <span className="text-[11px] text-emerald-700 font-medium flex items-center gap-1">
-              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-              100% Deterministic Rule Engine Verified
+      {/* Category Pills Filter */}
+      <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar">
+        {CATEGORIES.map((cat) => (
+          <button
+            key={cat}
+            onClick={() => setSelectedCategory(cat)}
+            className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-colors ${
+              selectedCategory === cat
+                ? 'bg-gov-primary text-white shadow-xs'
+                : 'bg-white border border-slate-200 text-slate-600 hover:border-slate-400 hover:bg-slate-50'
+            }`}
+          >
+            {cat}
+          </button>
+        ))}
+      </div>
+
+      {/* Schemes Results Count & Active Filters Indicator */}
+      <div className="flex items-center justify-between text-xs text-gov-muted pt-1">
+        <div className="flex items-center gap-2">
+          <span className="font-semibold text-slate-700">
+            Showing <strong className="text-gov-primary font-bold">{filteredSchemes.length}</strong> of{' '}
+            <strong className="text-gov-primary font-bold">{allSchemes.length}</strong> recommended schemes
+          </span>
+          {selectedCategory !== 'All' && (
+            <span className="bg-slate-100 text-slate-700 border border-slate-200 px-2 py-0.5 rounded text-[11px] font-medium">
+              Category: {selectedCategory}
             </span>
-          </div>
-
-          {/* Schemes Grid */}
-          {isRagLoading ? (
-            <LoadingSpinner label="Running RAG retrieval and validating eligibility rules..." size="lg" className="py-16" />
-          ) : ragSchemes.length === 0 ? (
-            <EmptyState
-              title="No eligible schemes matched this search"
-              description="Our eligibility engine evaluated the available schemes against your citizen profile and found none matching both this keyword and your qualifications. Try searching for a broader term like 'scholarship', 'education', or 'grant'."
-              actionLabel="View All Suggested Schemes"
-              onAction={handleResetSearch}
-            />
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {ragSchemes.map((scheme) => (
-                <SchemeCard key={scheme._id} scheme={scheme} />
-              ))}
-            </div>
+          )}
+          {selectedTopic && (
+            <span className="bg-blue-100 text-blue-900 border border-blue-200 px-2 py-0.5 rounded text-[11px] font-medium">
+              Topic: {selectedTopic}
+            </span>
           )}
         </div>
-      )}
 
-      {/* ================= TAB 2: PROFILE DEMOGRAPHIC MATCHED ================= */}
-      {activeTab === 'profile' && (
-        <div className="space-y-6">
-          {/* Profile Match Context Banner */}
-          {profileSummary && (
-            <div className="bg-blue-50/80 border border-blue-200/90 rounded-2xl p-4 sm:p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 text-xs shadow-xs">
-              <div className="flex items-start sm:items-center gap-3">
-                <div className="w-9 h-9 rounded-xl bg-gov-secondary text-white flex items-center justify-center shrink-0 shadow-xs">
-                  <Sparkles className="w-4 h-4 text-amber-300" />
-                </div>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className="font-bold text-gov-primary text-sm">
-                      Evaluated Against Your Citizen Profile
-                    </span>
-                    <span className="text-[10px] font-bold bg-emerald-100 text-emerald-800 px-1.5 py-0.2 rounded">
-                      Active
-                    </span>
-                  </div>
-                  <div className="flex flex-wrap items-center gap-2 text-slate-700 mt-1.5">
-                    {profileSummary.occupation && (
-                      <span className="bg-white px-2 py-0.5 rounded-md border border-slate-200 font-medium">
-                        Occupation: <strong className="text-slate-900">{profileSummary.occupation}</strong>
-                      </span>
-                    )}
-                    {profileSummary.state && (
-                      <span className="bg-white px-2 py-0.5 rounded-md border border-slate-200 font-medium">
-                        State: <strong className="text-slate-900">{profileSummary.state}</strong>
-                      </span>
-                    )}
-                    {profileSummary.annualFamilyIncome !== null && profileSummary.annualFamilyIncome !== undefined && (
-                      <span className="bg-white px-2 py-0.5 rounded-md border border-slate-200 font-medium">
-                        Family Income: <strong className="text-slate-900">₹{profileSummary.annualFamilyIncome.toLocaleString('en-IN')}/yr</strong>
-                      </span>
-                    )}
-                    {profileSummary.community && (
-                      <span className="bg-white px-2 py-0.5 rounded-md border border-slate-200 font-medium">
-                        Category: <strong className="text-slate-900">{profileSummary.community}</strong>
-                      </span>
-                    )}
-                  </div>
-                </div>
-              </div>
+        <span className="text-[11px] text-emerald-700 font-medium flex items-center gap-1">
+          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+          100% Profile Eligibility Verified
+        </span>
+      </div>
 
-              <Link
-                to="/dashboard/profile"
-                className="shrink-0 self-start md:self-center px-3 py-1.5 rounded-lg bg-white border border-gov-secondary text-gov-secondary hover:bg-gov-secondary hover:text-white transition-colors text-xs font-semibold flex items-center gap-1 shadow-xs"
-              >
-                <span>Update Profile</span>
-                <ArrowRight className="w-3.5 h-3.5" />
-              </Link>
-            </div>
-          )}
-
-          {/* Category Pills Filter */}
-          <div className="flex items-center gap-2 overflow-x-auto pb-2 no-scrollbar">
-            {CATEGORIES.map((cat) => (
-              <button
-                key={cat}
-                onClick={() => setSelectedCategory(cat)}
-                className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-colors ${
-                  selectedCategory === cat
-                    ? 'bg-gov-primary text-white shadow-xs'
-                    : 'bg-white border border-gov-border text-slate-600 hover:border-slate-400'
-                }`}
-              >
-                {cat}
-              </button>
-            ))}
-          </div>
-
-          {/* Recommended Schemes Count */}
-          <div className="flex items-center justify-between text-xs text-gov-muted pt-1">
-            <span className="font-semibold text-slate-700">
-              Showing <strong className="text-gov-primary">{profileSchemes.length}</strong> Recommended {profileSchemes.length === 1 ? 'Scheme' : 'Schemes'}
-            </span>
-          </div>
-
-          {/* Grid */}
-          {isProfileLoading ? (
-            <LoadingSpinner label="Evaluating demographic criteria and matching recommended schemes..." size="lg" className="py-16" />
-          ) : profileSchemes.length === 0 ? (
-            <EmptyState
-              title="No recommended schemes in this category"
-              description="None of the schemes in this sector currently match your profile rules. You can update your profile or check 'All' categories."
-              actionLabel="Show All Categories"
-              onAction={() => setSelectedCategory('All')}
-            />
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {profileSchemes.map((scheme) => (
-                <SchemeCard key={scheme._id} scheme={scheme} />
-              ))}
-            </div>
-          )}
+      {/* Schemes Grid */}
+      {isLoading ? (
+        <LoadingSpinner label="Evaluating schemes for your profile..." size="lg" className="py-20" />
+      ) : filteredSchemes.length === 0 ? (
+        <EmptyState
+          title="No recommended schemes match these filters"
+          description="Try selecting 'All Recommended' or choosing a different category to explore available welfare initiatives."
+          actionLabel="Reset Filters"
+          onAction={() => {
+            setActiveSourceFilter('all');
+            setSelectedCategory('All');
+            setSelectedTopic('');
+            setSearchKeyword('');
+          }}
+        />
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {filteredSchemes.map((scheme) => (
+            <SchemeCard key={scheme._id} scheme={scheme} />
+          ))}
         </div>
       )}
     </div>

@@ -12,12 +12,14 @@ import {
   FileText,
   HelpCircle,
   ArrowLeft,
+  ArrowRight,
   Share2,
   AlertTriangle,
   Award,
   Layers,
   ChevronRight,
 } from 'lucide-react';
+import SchemeCard from '../../components/cards/SchemeCard';
 import Button from '../../components/common/Button';
 import Badge from '../../components/common/Badge';
 import Card from '../../components/common/Card';
@@ -39,6 +41,20 @@ const SchemeDetailPage = () => {
   const [activeTab, setActiveTab] = useState('overview');
   const [isBookmarked, setIsBookmarked] = useState(false);
   const [isReminderModalOpen, setIsReminderModalOpen] = useState(false);
+  const [relatedSchemes, setRelatedSchemes] = useState([]);
+
+  useEffect(() => {
+    if (scheme?.category) {
+      api
+        .get(`/schemes?category=${encodeURIComponent(scheme.category)}&limit=4`)
+        .then((res) => {
+          if (res.data.success) {
+            setRelatedSchemes(res.data.data.filter((s) => s._id !== scheme._id).slice(0, 3));
+          }
+        })
+        .catch(() => {});
+    }
+  }, [scheme?._id, scheme?.category]);
 
   useEffect(() => {
     const fetchScheme = async () => {
@@ -493,6 +509,35 @@ const SchemeDetailPage = () => {
           )}
         </div>
       </div>
+
+      {/* Related Schemes Section */}
+      {relatedSchemes.length > 0 && (
+        <div className="pt-8 border-t border-gov-border space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-lg font-bold text-gov-primary">
+                Related {scheme.category} Schemes
+              </h2>
+              <p className="text-xs text-gov-muted">
+                Other welfare programs citizens frequently explore alongside this scheme.
+              </p>
+            </div>
+            <Link
+              to={`/schemes?category=${encodeURIComponent(scheme.category)}`}
+              className="text-xs font-semibold text-gov-secondary hover:underline flex items-center gap-1"
+            >
+              <span>View all in {scheme.category}</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </Link>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {relatedSchemes.map((rel) => (
+              <SchemeCard key={rel._id} scheme={rel} />
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Reminder Modal */}
       <ReminderModal

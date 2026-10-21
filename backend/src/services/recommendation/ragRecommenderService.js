@@ -179,14 +179,14 @@ export const getRagRecommendationsForUser = async (userId, currentQuery = '', li
 
       const capitalizedKeyword = matchedKeyword ? matchedKeyword.charAt(0).toUpperCase() + matchedKeyword.slice(1) : '';
       const recommendationReason = matchedKeyword
-        ? `Suggested based on your search for "${capitalizedKeyword}"`
-        : `Recommended based on your ${userProfile?.occupation || 'citizen'} profile`;
+        ? `Because you searched for "${capitalizedKeyword}"`
+        : `Matches your ${userProfile?.occupation || 'citizen'} profile`;
 
       eligibleMatches.push({
         ...scheme,
         relevanceScore: score,
         matchPercentage,
-        recommendationBadge: matchedKeyword ? 'AI Search Matched' : 'Profile Matched',
+        recommendationBadge: matchedKeyword ? 'Based on Search' : 'Profile Match',
         recommendationReason,
         matchedKeyword,
       });
@@ -196,14 +196,14 @@ export const getRagRecommendationsForUser = async (userId, currentQuery = '', li
     eligibleMatches.sort((a, b) => b.relevanceScore - a.relevanceScore);
     const finalRecommendations = eligibleMatches.slice(0, limit);
 
-    // 6. Generate AI Synthesis Insight
+    // 6. Generate Synthesis Insight
     const primaryTopics = keywords.slice(0, 3).map((w) => w.charAt(0).toUpperCase() + w.slice(1));
-    const topicsLabel = primaryTopics.length > 0 ? primaryTopics.join(', ') : 'Welfare & Empowerment';
-    const profileContext = userProfile?.occupation ? `${userProfile.occupation} in ${userProfile.state || 'India'}` : 'your profile';
+    const topicsLabel = primaryTopics.length > 0 ? primaryTopics.join(', ') : 'Welfare & Benefits';
+    const profileContext = userProfile?.occupation ? `${userProfile.occupation} in ${userProfile.state || 'India'}` : 'your citizen profile';
 
     const aiSummary = hasSearchContext
-      ? `Based on your recent searches for "${topicsLabel}" and ${profileContext}, the RAG engine retrieved and verified ${finalRecommendations.length} eligible schemes tailored to your needs.`
-      : `Based on ${profileContext}, here are top verified welfare schemes you are currently eligible to apply for.`;
+      ? `Showing ${finalRecommendations.length} verified schemes matching your interest in ${topicsLabel} and eligible for your profile as a ${profileContext}.`
+      : `Showing ${finalRecommendations.length} verified schemes you are currently eligible for based on ${profileContext}.`;
 
     return {
       success: true,
