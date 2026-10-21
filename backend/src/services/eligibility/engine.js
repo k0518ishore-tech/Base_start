@@ -25,6 +25,10 @@ export const extractProfileValue = (profile, field) => {
   if (!profile) return undefined;
 
   if (field === 'age') {
+    if (profile.age !== undefined && profile.age !== null && profile.age !== '') {
+      const a = Number(profile.age);
+      if (!isNaN(a)) return a;
+    }
     return calculateAge(profile.dateOfBirth);
   }
 
@@ -88,6 +92,15 @@ export const extractProfileValue = (profile, field) => {
   return undefined;
 };
 
+// Helper to normalize strings for robust comparisons
+const cleanStr = (s) =>
+  String(s || '')
+    .toLowerCase()
+    .replace(/['’]/g, '')
+    .replace(/[^a-z0-9]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+
 // Helper to format values for readable explanations
 const formatVal = (v) => {
   if (v === null || v === undefined || v === '') return 'Not provided';
@@ -129,7 +142,13 @@ export const evaluateRule = (rule, profile) => {
   switch (operator) {
     case '==': {
       if (typeof expectedValue === 'string' && typeof actualValue === 'string') {
-        passed = actualValue.trim().toLowerCase() === expectedValue.trim().toLowerCase();
+        const expClean = cleanStr(expectedValue);
+        const actClean = cleanStr(actualValue);
+        if (field === 'state') {
+          passed = actClean === expClean || expClean.includes('all india') || actClean.includes('all india');
+        } else {
+          passed = actClean === expClean;
+        }
       } else {
         passed = actualValue == expectedValue;
       }
@@ -141,7 +160,7 @@ export const evaluateRule = (rule, profile) => {
 
     case '!=': {
       if (typeof expectedValue === 'string' && typeof actualValue === 'string') {
-        passed = actualValue.trim().toLowerCase() !== expectedValue.trim().toLowerCase();
+        passed = cleanStr(actualValue) !== cleanStr(expectedValue);
       } else {
         passed = actualValue != expectedValue;
       }
@@ -193,12 +212,27 @@ export const evaluateRule = (rule, profile) => {
 
     case 'IN': {
       const list = Array.isArray(expectedValue)
-        ? expectedValue.map((v) => String(v).trim().toLowerCase())
-        : String(expectedValue).split(',').map((v) => v.trim().toLowerCase());
+        ? expectedValue.map((v) => String(v).trim())
+        : String(expectedValue).split(',').map((v) => v.trim());
 
-      const userValStr = String(actualValue).trim().toLowerCase();
-      // Also allow 'All India' match if checking state
-      passed = list.includes(userValStr) || (field === 'state' && list.includes('all india'));
+      const userClean = cleanStr(actualValue);
+      passed =
+        list.some((item) => {
+          const itemClean = cleanStr(item);
+          if (itemClean === userClean) return true;
+          if (field === 'education') {
+            if (userClean.includes('graduate') && itemClean.includes('graduate')) return true;
+            if (userClean.includes('post graduate') && itemClean.includes('post graduate')) return true;
+            if (userClean.includes('class 12') && itemClean.includes('class 12')) return true;
+            if (userClean.includes('class 10') && itemClean.includes('class 10')) return true;
+          }
+          if (field === 'occupation' || field === 'employmentStatus') {
+            if (userClean.includes('student') && itemClean.includes('student')) return true;
+            if (userClean.includes('farmer') && itemClean.includes('farmer')) return true;
+            if (userClean.includes('unemployed') && itemClean.includes('unemployed')) return true;
+          }
+          return false;
+        }) || (field === 'state' && list.some((i) => cleanStr(i).includes('all india')));
       explanation = passed
         ? `Passed: Your ${field} (${formatVal(actualValue)}) is among eligible options.`
         : `Failed: Your ${field} (${formatVal(actualValue)}) is not listed among eligible options: ${formatVal(expectedValue)}.`;
@@ -207,11 +241,11 @@ export const evaluateRule = (rule, profile) => {
 
     case 'NOT_IN': {
       const list = Array.isArray(expectedValue)
-        ? expectedValue.map((v) => String(v).trim().toLowerCase())
-        : String(expectedValue).split(',').map((v) => v.trim().toLowerCase());
+        ? expectedValue.map((v) => cleanStr(v))
+        : String(expectedValue).split(',').map((v) => cleanStr(v));
 
-      const userValStr = String(actualValue).trim().toLowerCase();
-      passed = !list.includes(userValStr);
+      const userClean = cleanStr(actualValue);
+      passed = !list.some((itemClean) => itemClean === userClean);
       explanation = passed
         ? `Passed: Your ${field} (${formatVal(actualValue)}) is not in excluded list.`
         : `Failed: Your ${field} (${formatVal(actualValue)}) is in the excluded list: ${formatVal(expectedValue)}.`;
@@ -229,9 +263,13 @@ export const evaluateRule = (rule, profile) => {
         min = Number(expectedValue.min || 0);
         max = Number(expectedValue.max || 0);
       } else if (typeof expectedValue === 'string') {
-        const parts = expectedValue.split('-').map(Number);
+        const delim = expectedValue.includes(',') ? ',' : (expectedValue.includes('-') ? '-' : ' ');
+        const parts = expectedValue
+          .split(delim)
+          .map((s) => Number(s.trim()))
+          .filter((n) => !isNaN(n));
         min = parts[0] || 0;
-        max = parts[1] || 0;
+        max = parts.length > 1 ? parts[1] : parts[0] || 0;
       }
       passed = !isNaN(numActual) && numActual >= min && numActual <= max;
       explanation = passed
