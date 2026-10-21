@@ -7,7 +7,6 @@ import {
   Eye,
   EyeOff,
   AlertCircle,
-  ShieldCheck,
 } from 'lucide-react';
 import Button from '../../components/common/Button';
 import Input from '../../components/common/Input';
@@ -55,17 +54,6 @@ const LoginPage = () => {
     }
   };
 
-  const handleDemoLogin = (role) => {
-    if (role === 'citizen') {
-      setEmail('citizen@schemegov.in');
-      setPassword('Citizen@12345');
-    } else {
-      setEmail('admin@schemegov.in');
-      setPassword('Admin@12345');
-    }
-    setError('');
-  };
-
   return (
     <div className="min-h-[85vh] flex items-center justify-center px-4 sm:px-6 lg:px-8 py-12">
       <div className="max-w-md w-full bg-white rounded-2xl border border-gov-border p-8 shadow-card space-y-6">
@@ -80,32 +68,6 @@ const LoginPage = () => {
           <p className="text-xs text-gov-muted">
             Sign in to access your scheme engine dashboard and modules
           </p>
-        </div>
-
-        {/* Quick 1-Click Demo Buttons */}
-        <div className="bg-slate-50 border border-slate-200/80 rounded-xl p-3 text-xs">
-          <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-2 flex items-center justify-between">
-            <span>Quick 1-Click Demo Access:</span>
-            <span className="text-[10px] text-emerald-700 bg-emerald-50 px-1.5 py-0.2 rounded font-semibold border border-emerald-200">
-              Ready to Test
-            </span>
-          </div>
-          <div className="flex gap-2">
-            <button
-              type="button"
-              onClick={() => handleDemoLogin('citizen')}
-              className="flex-1 py-1.5 px-2.5 rounded-lg bg-white border border-slate-200 hover:border-gov-secondary hover:text-gov-secondary font-semibold text-slate-700 transition-colors text-xs text-center shadow-xs"
-            >
-              Citizen Demo
-            </button>
-            <button
-              type="button"
-              onClick={() => handleDemoLogin('admin')}
-              className="flex-1 py-1.5 px-2.5 rounded-lg bg-white border border-slate-200 hover:border-gov-primary hover:text-gov-primary font-semibold text-slate-700 transition-colors text-xs text-center shadow-xs"
-            >
-              Admin Demo
-            </button>
-          </div>
         </div>
 
         {/* Error Alert */}
