@@ -6,16 +6,15 @@ import GlobalWatermark from '../components/common/GlobalWatermark';
 const AdminLayout = () => {
   return (
     <div className="min-h-screen flex flex-col bg-slate-100 relative overflow-x-hidden">
-      {/* Single, unified Admin Navbar at the top */}
-      <AdminNavbar />
+      {/* Global Background Watermark */}
+      <GlobalWatermark />
 
-      {/* Main Content Area - Full width with max-w-7xl container */}
-      <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8 relative min-h-[calc(100vh-4rem)] flex flex-col">
-        <GlobalWatermark />
-        <div className="relative z-10 flex-1">
+      <div className="relative z-10 flex flex-col min-h-screen">
+        <AdminNavbar />
+        <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8">
           <Outlet />
-        </div>
-      </main>
+        </main>
+      </div>
     </div>
   );
 };
