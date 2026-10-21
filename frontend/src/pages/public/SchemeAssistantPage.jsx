@@ -17,6 +17,7 @@ import Card from '../../components/common/Card';
 import Badge from '../../components/common/Badge';
 import Button from '../../components/common/Button';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
+import GlobalWatermark from '../../components/common/GlobalWatermark';
 import api from '../../services/api';
 
 const SUGGESTED_QUERIES = [
@@ -187,7 +188,10 @@ const SchemeAssistantPage = () => {
       {/* Main Chat Container */}
       <div className="bg-white/40 backdrop-blur-2xs rounded-2xl border border-gov-border/80 shadow-subtle flex flex-col h-[580px] overflow-hidden">
         {/* Chat Feed */}
-        <div className="flex-1 p-4 sm:p-6 overflow-y-auto space-y-5 bg-transparent">
+        <div className="flex-1 p-4 sm:p-6 overflow-y-auto space-y-5 bg-transparent relative">
+          {/* Centered specifically inside the chat message display area */}
+          <GlobalWatermark size="w-[85%] max-w-2xl max-h-[60vh]" opacity="opacity-[0.09]" />
+          <div className="relative z-10 space-y-5">
           {messages.map((msg, index) => {
             const isUser = msg.role === 'user';
             return (
@@ -279,6 +283,7 @@ const SchemeAssistantPage = () => {
           )}
 
           <div ref={messagesEndRef} />
+          </div>
         </div>
 
         {/* Suggested Queries Chips (Quick Click) */}
