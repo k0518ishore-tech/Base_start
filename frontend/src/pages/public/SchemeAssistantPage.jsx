@@ -190,7 +190,7 @@ const SchemeAssistantPage = () => {
         {/* Chat Feed */}
         <div className="flex-1 p-4 sm:p-6 overflow-y-auto space-y-5 bg-transparent relative">
           {/* Centered specifically inside the chat message display area */}
-          <GlobalWatermark size="w-[85%] max-w-2xl max-h-[60vh]" opacity="opacity-[0.09]" />
+          <GlobalWatermark size="w-[85%] max-w-2xl max-h-[60vh]" opacity="opacity-85" />
           <div className="relative z-10 space-y-5">
           {messages.map((msg, index) => {
             const isUser = msg.role === 'user';
