@@ -185,9 +185,9 @@ const SchemeAssistantPage = () => {
       </div>
 
       {/* Main Chat Container */}
-      <div className="bg-white rounded-2xl border border-gov-border shadow-subtle flex flex-col h-[580px] overflow-hidden">
+      <div className="bg-white/40 backdrop-blur-2xs rounded-2xl border border-gov-border/80 shadow-subtle flex flex-col h-[580px] overflow-hidden">
         {/* Chat Feed */}
-        <div className="flex-1 p-4 sm:p-6 overflow-y-auto space-y-5 bg-slate-50/40">
+        <div className="flex-1 p-4 sm:p-6 overflow-y-auto space-y-5 bg-transparent">
           {messages.map((msg, index) => {
             const isUser = msg.role === 'user';
             return (
