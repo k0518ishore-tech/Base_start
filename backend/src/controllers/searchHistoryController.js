@@ -22,6 +22,18 @@ export const logSearch = async (req, res, next) => {
   }
 };
 
+export const clearSearchHistory = async (req, res, next) => {
+  try {
+    await SearchHistory.deleteMany({ userId: req.user._id });
+    return res.status(200).json({
+      success: true,
+      message: 'Search history cleared successfully',
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 export const getRecentSearches = async (req, res, next) => {
   try {
     const history = await SearchHistory.find({ userId: req.user._id })

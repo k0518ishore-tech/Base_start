@@ -5,6 +5,7 @@ import Bookmark from '../models/Bookmark.js';
 import SearchHistory from '../models/SearchHistory.js';
 import UserProfile from '../models/UserProfile.js';
 import { evaluateSchemeEligibility } from '../services/eligibility/engine.js';
+import { getRagRecommendationsForUser } from '../services/recommendation/ragRecommenderService.js';
 import {
   createSystemNotification,
   recordAuditLog,
@@ -394,6 +395,39 @@ export const getRecommendedSchemes = async (req, res, next) => {
       data: recommendedList,
       profileSummary: null,
     });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Personalized RAG Recommendations based on user's past search & browsing history
+export const getRagRecommendations = async (req, res, next) => {
+  try {
+    const userId = req.user?._id || null;
+    const { query, limit } = req.query;
+
+    // Asynchronously log search interaction if user supplied query
+    if (userId && query && query.trim().length >= 3) {
+      SearchHistory.create({
+        userId,
+        searchQuery: query.trim(),
+        interactionType: 'SEARCH',
+      }).catch((e) => console.error('RAG search log error:', e.message));
+    }
+
+    const result = await getRagRecommendationsForUser(userId, query, Number(limit) || 12);
+
+    // If authenticated, attach isBookmarked status
+    if (userId && result.data && result.data.length > 0) {
+      const bookmarks = await Bookmark.find({ userId }).select('schemeId').lean();
+      const bookmarkedIds = new Set(bookmarks.map((b) => b.schemeId.toString()));
+      result.data = result.data.map((s) => ({
+        ...s,
+        isBookmarked: bookmarkedIds.has(s._id.toString()),
+      }));
+    }
+
+    return res.status(200).json(result);
   } catch (error) {
     next(error);
   }

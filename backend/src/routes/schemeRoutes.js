@@ -3,6 +3,7 @@ import {
   getAllSchemes,
   getSchemeById,
   getRecommendedSchemes,
+  getRagRecommendations,
   createScheme,
   updateScheme,
   deleteScheme,
@@ -17,6 +18,7 @@ const router = express.Router();
 // Public routes
 router.get('/', optionalAuth, getAllSchemes);
 router.get('/recommended', optionalAuth, getRecommendedSchemes);
+router.get('/rag-recommendations', optionalAuth, getRagRecommendations);
 router.get('/:id', optionalAuth, getSchemeById);
 
 // Admin-only routes

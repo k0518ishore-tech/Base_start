@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import {
   Search,
   Filter,
@@ -9,6 +9,8 @@ import {
   ChevronLeft,
   ChevronRight,
   Layers,
+  Sparkles,
+  ArrowRight,
 } from 'lucide-react';
 import SchemeCard from '../../components/cards/SchemeCard';
 import Input from '../../components/common/Input';
@@ -305,6 +307,28 @@ const SchemesPage = () => {
 
         {/* Schemes Results Content */}
         <div className="flex-1 w-full space-y-6">
+          {/* RAG Recommendation Callout Banner */}
+          <div className="bg-gradient-to-r from-blue-50 via-indigo-50 to-amber-50 border border-blue-200/80 rounded-xl p-3 sm:p-3.5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs shadow-2xs">
+            <div className="flex items-center gap-2.5">
+              <div className="w-7 h-7 rounded-lg bg-gov-secondary text-white flex items-center justify-center shrink-0 shadow-2xs">
+                <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+              </div>
+              <div>
+                <span className="font-bold text-gov-primary">AI Recommender Active:</span>
+                <span className="text-slate-600 ml-1.5">
+                  Schemes you search and explore dynamically build personalized RAG suggestions.
+                </span>
+              </div>
+            </div>
+            <Link
+              to="/recommendations"
+              className="shrink-0 font-bold text-gov-secondary hover:text-blue-800 flex items-center gap-1 bg-white px-2.5 py-1 rounded-lg border border-blue-200 hover:border-gov-secondary transition-colors text-xs"
+            >
+              <span>AI Recommendations</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </Link>
+          </div>
+
           {/* Top Search & Sort Controls */}
           <div className="bg-white rounded-xl border border-gov-border p-3 sm:p-4 shadow-subtle flex flex-col sm:flex-row items-center gap-3">
             <form onSubmit={handleSearchSubmit} className="relative flex-1 w-full">
