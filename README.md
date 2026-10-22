@@ -31,9 +31,12 @@ A full-stack, transparent web platform designed for Indian citizens to discover 
 - **1,062 Central & State Schemes**: Comprehensive directory streaming from MongoDB Atlas cloud across multiple ministries and departments.
 - **Rule-Based Eligibility Engine**: Evaluates applicant attributes (annual income, occupation, community category, age calculated from DOB, state, land ownership, and disability) against conditions using operators: `==`, `!=`, `>`, `>=`, `<`, `<=`, `IN`, `NOT_IN`, `BETWEEN`, `EXISTS`.
 - **Hybrid RAG Scheme Recommendations**: Citizen discovery powered by profile-based criteria, search query history intelligence, and department clustering.
-- **Government Watermark Design System**: Authentic, high-resolution national pillar emblem watermark background across citizen and administration portals.
+- **AI Scheme Assistant**: Powered by Alibaba's **Qwen 2.5 Instruct** Large Language Model with live database retrieval grounding (RAG).
+- **Official Pillar Watermark**: Authentic, high-resolution national emblem watermark background across citizen and administration portals.
 - **Automated Reminder Cron Engine**: Runs background sweeps for overdue scheme deadlines with persistent citizen notifications.
 - **Three Deterministic Result States**: `ELIGIBLE`, `NOT_ELIGIBLE`, and `INCOMPLETE` with transparent line-by-line rule explanations.
+
+> 📖 **Detailed Technical AI/ML Documentation**: Read [`AI_ML_MODELS.md`](AI_ML_MODELS.md) for a comprehensive explanation of our Qwen 2.5 LLM, RAG architecture, Hybrid Recommendation algorithms, and Symbolic AI engine.
 
 ---
 
