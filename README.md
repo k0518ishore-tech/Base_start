@@ -36,7 +36,9 @@ A full-stack, transparent web platform designed for Indian citizens to discover 
 - **Automated Reminder Cron Engine**: Runs background sweeps for overdue scheme deadlines with persistent citizen notifications.
 - **Three Deterministic Result States**: `ELIGIBLE`, `NOT_ELIGIBLE`, and `INCOMPLETE` with transparent line-by-line rule explanations.
 
-> 📖 **Detailed Technical AI/ML Documentation**: Read [`AI_ML_MODELS.md`](AI_ML_MODELS.md) for a comprehensive explanation of our Qwen 2.5 LLM, RAG architecture, Hybrid Recommendation algorithms, and Symbolic AI engine.
+> 📖 **Comprehensive Project Reports**:
+> - **[AI & Machine Learning Architecture (`AI_ML_MODELS.md`)](AI_ML_MODELS.md)**: Mathematical formulations, Qwen 2.5 LLM, RAG framework, Hybrid Recommendation algorithms, Symbolic AI, and viva voce defense cheat-sheet.
+> - **[System Functionalities & Workflow Engineering (`FUNCTIONALITIES_AND_WORKFLOW.md`)](FUNCTIONALITIES_AND_WORKFLOW.md)**: Module specifications, 8 end-to-end Mermaid workflow diagrams, state lifecycles, and database ER model.
 
 ---
 
